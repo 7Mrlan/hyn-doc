@@ -1,4 +1,4 @@
-﻿name: Deploy documentation site
+name: Deploy documentation site
 
 on:
   push:

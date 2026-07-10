@@ -1,4 +1,4 @@
-﻿name: Publish HYN UI package
+name: Publish HYN UI package
 
 on:
   push:

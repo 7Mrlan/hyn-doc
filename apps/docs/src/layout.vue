@@ -27,6 +27,8 @@
           class="hyn-doc-nav__item"
           :to="`/component/hyn/${entry.slug}`"
           :class="{ 'is-active': activeSlug === entry.slug }"
+          @pointerenter="preloadDocPage(entry.slug)"
+          @focus="preloadDocPage(entry.slug)"
           @click="handleNavClick(`/component/hyn/${entry.slug}`, $event)"
         >
           <span>{{ t(entry.titleKey) }}</span>
@@ -60,6 +62,7 @@
 
 <script setup name="HynComponentDocsLayout" lang="ts">
 import { getSortedHynComponentDocEntries } from './docs/catalog';
+import { preloadAllHynDocPages, preloadHynDocPage } from './router';
 import { useAppI18n } from '@/utils/i18n';
 
 interface TocItem {
@@ -73,6 +76,12 @@ const contentRef = ref<HTMLElement | null>(null);
 const tocItems = ref<TocItem[]>([]);
 const docEntries = getSortedHynComponentDocEntries();
 let tocFrame = 0;
+let docPreloadTimer: number | undefined;
+
+/** 鼠标悬停或键盘聚焦时提前加载目标页，保持导航反馈即时。 */
+const preloadDocPage = (slug: string): void => {
+  preloadHynDocPage(slug);
+};
 
 const activeSlug = computed(() => {
   const path = route.path.replace(/\/+$/, '');
@@ -170,11 +179,17 @@ watch(
 
 onMounted(() => {
   scheduleRefreshToc();
+  docPreloadTimer = window.setTimeout(() => {
+    preloadAllHynDocPages();
+  }, 320);
 });
 
 onBeforeUnmount(() => {
   if (tocFrame) {
     window.cancelAnimationFrame(tocFrame);
+  }
+  if (docPreloadTimer !== undefined) {
+    window.clearTimeout(docPreloadTimer);
   }
 });
 </script>

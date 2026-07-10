@@ -19,6 +19,23 @@ const docPageLoaders = {
   'virtual-tree-table': () => import('@/docs/pages/virtual-tree-table.vue')
 } as const;
 
+type HynDocSlug = keyof typeof docPageLoaders;
+
+/** 预加载单个文档页及其 Vite 依赖 chunk，不实例化页面组件。 */
+export const preloadHynDocPage = (slug: string): void => {
+  const loader = docPageLoaders[slug as HynDocSlug];
+  if (loader) {
+    void loader();
+  }
+};
+
+/** 在首屏稳定后预加载全部文档页，消除后续菜单切换的网络等待。 */
+export const preloadAllHynDocPages = (): void => {
+  Object.values(docPageLoaders).forEach(loader => {
+    void loader();
+  });
+};
+
 /** 自动生成静态 Pages 可用的文档子路由。 */
 const docRoutes: RouteRecordRaw[] = Object.entries(docPageLoaders).map(([slug, component]) => ({
   path: slug,

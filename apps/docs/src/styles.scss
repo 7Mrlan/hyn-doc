@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   color-scheme: light;
   --app-surface: #f7fbf7;
   --app-surface-muted: #edf6ef;
@@ -14,3 +14,9 @@
 html, body, #app { min-width: 320px; min-height: 100%; margin: 0; }
 body { color: var(--app-text); background: var(--app-surface); font-family: Inter, "Microsoft YaHei", sans-serif; }
 button, input, textarea, select { font: inherit; }
+
+/* Standalone Pages does not inherit the SSO application's global anchor reset. */
+a {
+  color: inherit;
+  text-decoration: none;
+}

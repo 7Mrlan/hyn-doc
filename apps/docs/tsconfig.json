@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@7mrlan/hyn-ui": ["../../packages/hyn-ui/src/index.ts"],
+      "@7mrlan/hyn-ui/*": ["../../packages/hyn-ui/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts", "src/**/*.d.ts"]
+}

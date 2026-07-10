@@ -1,0 +1,35 @@
+﻿name: Publish HYN UI package
+
+on:
+  push:
+    tags: [hyn-ui-v*]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: '@7mrlan'
+          cache: pnpm
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Type-check package
+        run: pnpm ui:typecheck
+      - name: Publish package
+        run: pnpm --filter @7mrlan/hyn-ui publish --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

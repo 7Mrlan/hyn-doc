@@ -1,0 +1,17 @@
+{
+  "name": "hyn-doc-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=22.13.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "docs:dev": "pnpm --filter @7mrlan/hyn-doc dev",
+    "docs:build": "pnpm --filter @7mrlan/hyn-doc build",
+    "docs:preview": "pnpm --filter @7mrlan/hyn-doc preview",
+    "docs:typecheck": "pnpm --filter @7mrlan/hyn-doc typecheck",
+    "ui:typecheck": "pnpm --filter @7mrlan/hyn-ui typecheck"
+  }
+}

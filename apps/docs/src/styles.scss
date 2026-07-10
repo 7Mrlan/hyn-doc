@@ -1,0 +1,16 @@
+﻿:root {
+  color-scheme: light;
+  --app-surface: #f7fbf7;
+  --app-surface-muted: #edf6ef;
+  --app-surface-raised: #ffffff;
+  --app-surface-border: #cbd9cd;
+  --app-text: #193322;
+  --app-text-muted: #617267;
+  --app-primary: #2a7a4d;
+  --app-radius-base: 10px;
+}
+
+* { box-sizing: border-box; }
+html, body, #app { min-width: 320px; min-height: 100%; margin: 0; }
+body { color: var(--app-text); background: var(--app-surface); font-family: Inter, "Microsoft YaHei", sans-serif; }
+button, input, textarea, select { font: inherit; }

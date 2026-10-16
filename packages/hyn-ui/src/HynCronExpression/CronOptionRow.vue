@@ -17,6 +17,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElRadio } from 'element-plus';
 /** Cron 可视化面板中单个规则模式行的参数。 */
 interface Props {
   /** 规则模式值，会原样回传给父级用于写入当前字段的 mode。 */

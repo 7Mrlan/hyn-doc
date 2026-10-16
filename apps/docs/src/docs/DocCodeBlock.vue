@@ -11,11 +11,13 @@
       <HighlightCode v-if="isVisible" :language="resolvedLanguage" :code="code" />
       <pre v-else aria-hidden="true"><code>{{ code }}</code></pre>
     </div>
+    <p v-if="copyFailed" role="alert">{{ t('hynDocs.demo.copyFailed') }}</p>
   </div>
 </template>
 
 <script setup name="HynDocCodeBlock" lang="ts">
 import HighlightJs from '@highlightjs/vue-plugin';
+import { useAppI18n } from '@/utils/i18n';
 import 'highlight.js/lib/common';
 import 'highlight.js/styles/atom-one-dark.css';
 
@@ -32,7 +34,13 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-const copyText = ref('Copy');
+const { t } = useAppI18n();
+/** 成功和失败分别保留可见状态，权限或非安全环境不能表现成无反馈的按钮。 */
+const copied = ref<boolean>(false);
+/** 失败提示留在对应代码块内，用户可以保留代码后处理浏览器权限。 */
+const copyFailed = ref<boolean>(false);
+/** 复制成功提示和默认按钮名称跟随当前文档语言。 */
+const copyText = computed<string>(() => t(copied.value ? 'hynDocs.demo.copied' : 'hynDocs.demo.copy'));
 const HighlightCode = HighlightJs.component;
 const codeBlockRef = ref<HTMLElement | null>(null);
 const isVisible = ref(false);
@@ -68,16 +76,23 @@ const startLazyHighlight = (): void => {
 };
 
 /**
- * 复制当前代码块的原始内容，视觉自动换行不会影响复制结果。
+ * 复制原始代码；浏览器拒绝写入时显示错误并保留异常，不尝试隐式降级复制。
  */
 const copyCode = async (): Promise<void> => {
-  await navigator.clipboard.writeText(props.code);
-  copyText.value = 'Copied';
+  copyFailed.value = false;
+  try {
+    if (!navigator.clipboard) { throw new Error('Clipboard API requires HTTPS or localhost.'); }
+    await navigator.clipboard.writeText(props.code);
+  } catch (error: unknown) {
+    copyFailed.value = true;
+    throw error;
+  }
+  copied.value = true;
   if (copyResetTimer) {
     window.clearTimeout(copyResetTimer);
   }
   copyResetTimer = window.setTimeout(() => {
-    copyText.value = 'Copy';
+    copied.value = false;
   }, 1200);
 };
 

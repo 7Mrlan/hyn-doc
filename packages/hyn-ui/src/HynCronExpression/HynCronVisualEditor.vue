@@ -302,6 +302,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { ElIcon, ElOption, ElRadioGroup, ElSelect, ElTabPane, ElTabs } from 'element-plus';
 import { Calendar } from '@element-plus/icons-vue';
 import { useHynI18n } from '@7mrlan/hyn-ui/runtime';
 import CronNumberUnit from './CronNumberUnit.vue';

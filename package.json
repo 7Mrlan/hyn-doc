@@ -2,6 +2,7 @@
   "name": "hyn-doc-workspace",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@10.0.0",
   "engines": {
     "node": ">=22.13.0",
@@ -12,6 +13,12 @@
     "docs:build": "pnpm --filter @7mrlan/hyn-doc build",
     "docs:preview": "pnpm --filter @7mrlan/hyn-doc preview",
     "docs:typecheck": "pnpm --filter @7mrlan/hyn-doc typecheck",
-    "ui:typecheck": "pnpm --filter @7mrlan/hyn-ui typecheck"
+    "ui:typecheck": "pnpm --filter @7mrlan/hyn-ui typecheck",
+    "docs:test": "pnpm --filter @7mrlan/hyn-doc exec node tests/build-browser-checks.mjs && node --experimental-strip-types tests/docs.smoke.ts",
+    "ui:consumer-check": "pnpm --filter @7mrlan/hyn-doc exec node tests/check-consumer.mjs",
+    "docs:contracts": "pnpm --filter @7mrlan/hyn-doc exec node tests/check-contracts.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.61.0"
   }
 }

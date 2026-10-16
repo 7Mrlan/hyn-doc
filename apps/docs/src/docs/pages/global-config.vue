@@ -101,7 +101,9 @@ interface ModeCard {
 
 const { t, tm } = useAppI18n();
 
+/** 示例只使用独立包公开配置项，避免再次依赖原业务项目的内部路径。 */
 const codeSnippets = {
+  /** 局部覆盖使用通用操作列文案，不要求宿主存在用户管理语言包。 */
   localOverride: `<hyn-table overflow-mode="ellipsis" />
 <hyn-form label-overflow-mode="wrap" />
 <hyn-dialog label-overflow-mode="fit" :auto-width="true" />
@@ -109,7 +111,8 @@ const codeSnippets = {
 const columns: HynTableColumn<UserRow>[] = [
   {
     prop: 'operation',
-    label: t('app.user.operation'),
+    key: 'operation',
+    label: t('app.common.action'),
     overflowMode: 'ellipsis'
   }
 ];`

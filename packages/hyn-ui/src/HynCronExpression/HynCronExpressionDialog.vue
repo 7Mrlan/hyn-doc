@@ -99,6 +99,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed, nextTick, ref, watch } from 'vue';
+import { ElAlert, ElButton, ElTag, ElTooltip } from 'element-plus';
 import { DocumentCopy } from '@element-plus/icons-vue';
 import HynDialog from '../HynDialog/index.vue';
 import { modal } from '@7mrlan/hyn-ui/runtime';

@@ -21,6 +21,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { ElOption, ElSelect } from 'element-plus';
 import { useHynI18n } from '@7mrlan/hyn-ui/runtime';
 import type { HynFormModel, HynFormOptionValue, HynFormRendererProps, HynFormSelectField } from '../types';
 import { getFormFieldValue, resolveFormOptions, setFormFieldValue } from '../utils';

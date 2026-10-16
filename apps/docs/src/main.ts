@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import 'element-plus/dist/index.css';
+import '@7mrlan/hyn-ui/styles';
 import '@/styles.scss';
 import App from '@/App.vue';
 import i18n from '@/i18n';

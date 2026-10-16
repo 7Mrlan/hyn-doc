@@ -8,5 +8,5 @@
       "@7mrlan/hyn-ui/*": ["../../packages/hyn-ui/src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts", "src/**/*.d.ts"]
+  "include": ["src/**/*.ts", "src/**/*.vue", "tests/**/*.ts", "tests/**/*.vue", "../../tests/**/*.ts", "vite.config.ts", "src/**/*.d.ts"]
 }

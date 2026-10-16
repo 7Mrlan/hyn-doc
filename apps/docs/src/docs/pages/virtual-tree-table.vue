@@ -42,7 +42,6 @@
           :row-disabled="isDemoTreeRowDisabled"
           selection
           :empty-text="t('hynDocs.virtualTreeTable.live.emptyText')"
-          @selection-change="handleTreeSelectionChange"
           @toggle-row="toggleRow"
         >
           <template #status="{ row }">
@@ -192,19 +191,23 @@
         </article>
       </div>
     </section>
+
+    <p class="hyn-doc-muted">{{ t('hynDocs.demo.session') }}</p>
+    <hyn-dialog v-if="editModel" v-model="editVisible" :title="t('app.common.edit')" :model="editModel" :fields="editFields" @submit="saveEdit" @cancel="editVisible = false" />
   </div>
 </template>
 
 <script setup name="HynVirtualTreeTableDoc" lang="ts">
 import type {
   HynVirtualTreeTableColumn,
-  HynVirtualTreeTableKey,
-  HynVirtualTreeTableSelectionChange
+  HynVirtualTreeTableKey
 } from '@7mrlan/hyn-ui/types';
 import { useHynVirtualTreeTable } from '@7mrlan/hyn-ui/composables/useHynVirtualTreeTable';
 import { Delete, Edit, Plus } from '@element-plus/icons-vue';
 import { useAppI18n } from '@/utils/i18n';
 import DocCodeBlock from '../DocCodeBlock.vue';
+import { useDemoRows } from '../useDemoRows';
+import type { HynDialogField } from '@7mrlan/hyn-ui/types';
 
 type DemoTreeStatus = 'enabled' | 'disabled';
 
@@ -235,9 +238,12 @@ interface DocVisualRule {
   description: string;
 }
 
-const { t, locale } = useAppI18n();
+const { t } = useAppI18n();
 
-const treeRows = ref<DemoTreeRow[]>(createDemoTreeRows());
+/** 语言变化重新生成未编辑的本地树节点。 */
+const initialTreeRows = computed<DemoTreeRow[]>(() => createDemoTreeRows());
+/** 本地记录、编辑草稿和删除确认共享相同的示例数据生命周期。 */
+const { rows: treeRows, editModel, editVisible, openEdit, saveEdit, deleteRows } = useDemoRows<DemoTreeRow>(initialTreeRows);
 const selectedTreeRowKeys = ref<HynVirtualTreeTableKey[]>([]);
 const selectedTreeRowCount = computed(() => selectedTreeRowKeys.value.length);
 
@@ -269,15 +275,15 @@ const treeColumns = computed<HynVirtualTreeTableColumn<DemoTreeRow>[]>(() => [
     align: 'center',
     sticky: 'right',
     actions: [
-      { key: 'edit', label: t('app.common.edit'), icon: Edit, permissions: ['system:dept:edit'], onClick: row => handleDemoAction(row) },
-      { key: 'add', label: t('app.common.add'), icon: Plus, permissions: ['system:dept:add'], onClick: row => handleDemoAction(row) },
+      { key: 'edit', label: t('app.common.edit'), icon: Edit, permissions: ['system:dept:edit'], onClick: openEdit },
+      { key: 'add', label: t('app.common.add'), icon: Plus, permissions: ['system:dept:add'], onClick: addChild },
       {
         key: 'delete',
         label: t('app.common.delete'),
         icon: Delete,
         type: 'danger',
         permissions: ['system:dept:remove'],
-        onClick: row => handleDemoAction(row)
+        onClick: removeTreeRow
       }
     ]
   }
@@ -289,7 +295,6 @@ const {
   visibleRows,
   rootLevelExpanded,
   expandBusyText,
-  setRows,
   toggleRow,
   toggleRootLevel
 } = useHynVirtualTreeTable<DemoTreeRow>(treeRows, {
@@ -500,10 +505,6 @@ const lazyBackendExample = `[
   }
 ]`;
 
-watch(locale, () => {
-  setRows(createDemoTreeRows());
-});
-
 function createVisualRule(key: string): DocVisualRule {
   return {
     kind: t(`hynDocs.virtualTreeTable.visual.items.${key}.kind`),
@@ -547,11 +548,27 @@ function isDemoTreeRowDisabled(row: DemoTreeRow): boolean {
   return row.status === 'disabled';
 }
 
-/** 文档示例保留事件闭环，业务页可在这里同步按钮禁用态或统计信息。 */
-function handleTreeSelectionChange(payload: HynVirtualTreeTableSelectionChange<DemoTreeRow>): void {
-  void payload;
+/** 编辑字段只覆盖当前行的可变业务内容，编号和树归属保持稳定。 */
+const editFields = computed<HynDialogField<DemoTreeRow>[]>(() => [
+  { key: 'name', prop: 'name', label: t('hynDocs.virtualTreeTable.live.columns.name'), type: 'input', required: true },
+  { key: 'owner', prop: 'owner', label: t('hynDocs.virtualTreeTable.live.columns.owner'), type: 'input', required: true }
+]);
+
+/** 新节点先作为独立草稿打开；取消不会向树中插入占位数据。 */
+function addChild(parent: DemoTreeRow): void {
+  openEdit({ id: Math.max(...treeRows.value.map(row => row.id), 0) + 1, parentId: parent.id, name: t('hynDocs.demo.addChild'), owner: parent.owner, status: 'enabled', statusLabel: t('hynDocs.virtualTreeTable.live.status.enabled') });
 }
 
-/** 文档演示操作只保留点击闭环，真实业务页在 onClick 中调用弹窗或接口。 */
-function handleDemoAction(_row: DemoTreeRow): void {}
+/** 删除整棵子树，防止父节点移除后留下不可见的孤儿记录。 */
+async function removeTreeRow(row: DemoTreeRow): Promise<void> {
+  const ids = new Set<number>([row.id]);
+  let previousSize = 0;
+  while (previousSize !== ids.size) {
+    previousSize = ids.size;
+    treeRows.value.forEach(item => { if (ids.has(item.parentId)) { ids.add(item.id); } });
+  }
+  if (await deleteRows([...ids])) {
+    selectedTreeRowKeys.value = selectedTreeRowKeys.value.filter(key => !ids.has(Number(key)));
+  }
+}
 </script>

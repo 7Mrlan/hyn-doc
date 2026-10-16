@@ -17,6 +17,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { ElCheckbox, ElCheckboxGroup, ElRadio, ElRadioGroup } from 'element-plus';
 import type {
   HynFormCheckboxField,
   HynFormCheckboxValue,

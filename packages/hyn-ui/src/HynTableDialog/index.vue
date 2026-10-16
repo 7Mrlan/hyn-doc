@@ -48,6 +48,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed, useSlots } from 'vue';
+import { ElButton, ElDialog, vLoading } from 'element-plus';
 import type { HynTableDialogEmits, HynTableDialogProps, HynTableDialogSlotState } from './types';
 import { useHynI18n } from '@7mrlan/hyn-ui/runtime';
 

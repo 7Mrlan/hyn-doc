@@ -133,60 +133,6 @@ export default {
       bindingPasswordRequired: '请输入密码'
     }
   },
-  common: {
-    action: '操作',
-    add: '新增',
-    back: '返回',
-    clear: '清空',
-    cancel: '取消',
-    close: '关闭',
-    confirm: '确定',
-    delete: '删除',
-    deleteSuccess: '删除成功',
-    detail: '详情',
-    edit: '编辑',
-    endDate: '结束日期',
-    export: '导出',
-    hideSearch: '隐藏搜索',
-    import: '导入',
-    index: '序号',
-    loading: '加载中...',
-    loadingMore: '加载更多...',
-    more: '更多',
-    noData: '暂无数据',
-    no: '否',
-    refresh: '刷新',
-    remark: '备注',
-    reset: '重置',
-    search: '搜索',
-    showColumns: '显示/隐藏列',
-    showSearch: '显示搜索',
-    startDate: '开始日期',
-    status: '状态',
-    submit: '提交',
-    success: '操作成功',
-    yes: '是'
-  },
-  hynForm: {
-    inputPlaceholder: '请输入{label}',
-    selectPlaceholder: '请选择{label}',
-    required: '{label}不能为空',
-    filePicker: {
-      chooseFile: '点击选择',
-      dragText: '将文件拖到此处，或',
-      fileTypeSeparator: '、',
-      typeTip: '仅允许选择 {types} 格式文件。',
-      invalidType: '文件格式不正确，请选择 {types} 格式文件',
-      invalidSize: '文件大小不能超过 {size} MB',
-      singleFileOnly: '只能选择一个文件'
-    }
-  },
-  hynTreeSelect: {
-    searchPlaceholder: '搜索节点名称或编号',
-    linkage: '父子联动',
-    linkageEnabledTip: '已开启：选择父节点会同步选择全部子节点',
-    linkageDisabledTip: '已关闭：父子节点可独立选择'
-  },
   generator: {
     addTitle: '添加{name}',
     collapseAll: '收起全部',
@@ -374,16 +320,6 @@ export default {
     videoInvalidSize: '上传视频大小不能超过 {size} MB！',
     videoUploading: '正在上传视频，请稍候...',
     editorPlaceholder: '请输入内容'
-  },
-  table: {
-    collapseRow: '收起',
-    expandRow: '展开',
-    expandingRootLevel: '正在展开一级',
-    loadFailed: '加载失败',
-    loadingChildren: '正在加载子节点',
-    selectAll: '选择全部',
-    selectRow: '选择第 {index} 行',
-    totalSelected: '共 {total} 条记录，已选 {selected} 项。'
   },
   toolGen: {
     searchKicker: '搜索筛选',

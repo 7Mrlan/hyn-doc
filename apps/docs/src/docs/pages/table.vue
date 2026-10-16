@@ -28,9 +28,13 @@
         <p>{{ t('hynDocs.table.live.description') }}</p>
       </div>
       <div class="hyn-doc-demo-frame">
+        <div class="hyn-doc-demo-toolbar">
+          <el-button type="primary" :icon="Upload" @click="importVisible = true">{{ t('app.common.import') }}</el-button>
+          <el-button :icon="Download" @click="downloadTemplate">{{ t('hynDocs.demo.template') }}</el-button>
+        </div>
         <hyn-table
           v-model:selected-row-keys="selectedRowKeys"
-          :rows="tableRows"
+          :rows="pagedTableRows"
           :columns="tableColumns"
           :row-key="getDemoRowKey"
           selection
@@ -43,6 +47,7 @@
             </span>
           </template>
         </hyn-table>
+        <el-pagination v-if="tableRows.length > demoPageSize" v-model:current-page="demoPage" :page-size="demoPageSize" :total="tableRows.length" layout="total, prev, pager, next" />
         <p class="hyn-doc-muted">{{ t('hynDocs.table.live.selectedRows', { count: selectedRowCount }) }}</p>
       </div>
     </section>
@@ -146,14 +151,24 @@
         </article>
       </div>
     </section>
+
+    <hyn-dialog v-model="importVisible" :title="t('hynDocs.demo.importTitle')" :model="importModel" :fields="importFields" :columns="1" @submit="importRows" @cancel="importVisible = false" @closed="resetImport">
+      <template #importNote><p>{{ t('hynDocs.demo.importTip') }}</p><p v-if="importError" role="alert">{{ importError }}</p></template>
+    </hyn-dialog>
+    <p class="hyn-doc-muted">{{ t('hynDocs.demo.session') }}</p>
+    <hyn-dialog v-if="editModel" v-model="editVisible" :title="t('app.common.edit')" :model="editModel" :fields="editFields" @submit="saveEdit" @cancel="editVisible = false" />
   </div>
 </template>
 
 <script setup name="HynTableDoc" lang="ts">
 import type { HynTableColumn, HynTableKey, HynTableSelectionChange } from '@7mrlan/hyn-ui/types';
-import { Delete, Edit } from '@element-plus/icons-vue';
+import { Delete, Edit, Upload, Download } from '@element-plus/icons-vue';
 import { useAppI18n } from '@/utils/i18n';
 import DocCodeBlock from '../DocCodeBlock.vue';
+import { useDemoRows } from '../useDemoRows';
+import { downloadDemoJson } from '../download';
+import modal from '@/plugins/modal';
+import type { HynDialogField } from '@7mrlan/hyn-ui/types';
 
 type DemoStatus = 'enabled' | 'disabled';
 
@@ -203,7 +218,8 @@ const metrics = computed<DocMetric[]>(() => [
   createMetric('actions')
 ]);
 
-const tableRows = computed<DemoTableRow[]>(() => [
+/** 根据当前语言生成未修改的岗位 fixture，编辑结果由独立会话状态合并。 */
+const initialTableRows = computed<DemoTableRow[]>(() => [
   {
     id: 1,
     name: t('hynDocs.table.live.rows.standard.name'),
@@ -230,6 +246,15 @@ const tableRows = computed<DemoTableRow[]>(() => [
   }
 ]);
 
+/** 本地记录、编辑草稿和删除确认共享相同的示例数据生命周期。 */
+const { rows: tableRows, editModel, editVisible, openEdit, saveEdit, deleteRows, upsertRows } = useDemoRows<DemoTableRow>(initialTableRows);
+/** 普通表格只渲染当前页，避免合法的大文件导入绕过 HynTable 的分页使用边界。 */
+const demoPage = ref<number>(1);
+/** 示例固定页容量，导入上限不等于一次创建的 DOM 行数。 */
+const demoPageSize: number = 10;
+/** 仅把当前页传入普通表格，完整会话数据仍用于导入合并和总数统计。 */
+const pagedTableRows = computed<DemoTableRow[]>(() => tableRows.value.slice((demoPage.value - 1) * demoPageSize, demoPage.value * demoPageSize));
+
 const tableColumns = computed<HynTableColumn<DemoTableRow>[]>(() => [
   { key: 'id', label: t('hynDocs.table.live.fields.id'), prop: 'id', width: 90 },
   { key: 'name', label: t('hynDocs.table.live.fields.name'), prop: 'name', minWidth: 160 },
@@ -243,7 +268,7 @@ const tableColumns = computed<HynTableColumn<DemoTableRow>[]>(() => [
     align: 'center',
     fixed: 'right',
     actions: [
-      { key: 'edit', label: t('hynDocs.table.live.actions.edit'), icon: Edit, permissions: ['system:post:edit'], onClick: row => handleDemoAction(row) },
+      { key: 'edit', label: t('hynDocs.table.live.actions.edit'), icon: Edit, permissions: ['system:post:edit'], onClick: openEdit },
       {
         key: 'delete',
         label: t('hynDocs.table.live.actions.delete'),
@@ -251,7 +276,7 @@ const tableColumns = computed<HynTableColumn<DemoTableRow>[]>(() => [
         type: 'danger',
         disabled: row => row.status === 'disabled',
         permissions: ['system:post:remove'],
-        onClick: row => handleDemoAction(row)
+        onClick: removeRow
       }
     ]
   }
@@ -352,6 +377,105 @@ function handleSelectionChange(payload: HynTableSelectionChange<DemoTableRow>): 
   selectedRowCount.value = payload.selectedRowKeys.length;
 }
 
-/** 文档示例只保留点击闭环，真实业务页在 onClick 中调用弹窗或接口。 */
-function handleDemoAction(_row: DemoTableRow): void {}
+/** 编辑字段只覆盖当前行的可变业务内容，编号和树归属保持稳定。 */
+const editFields = computed<HynDialogField<DemoTableRow>[]>(() => [
+  { key: 'name', prop: 'name', label: t('hynDocs.table.live.fields.name'), type: 'input', required: true },
+  { key: 'code', prop: 'code', label: t('hynDocs.table.live.fields.code'), type: 'input', required: true },
+  { key: 'remark', prop: 'remark', label: t('hynDocs.table.live.fields.remark'), type: 'textarea' }
+]);
+
+/** 文件只保留在浏览器内，提交后才校验并合并到本页示例数据。 */
+const importVisible = ref<boolean>(false);
+const importModel = reactive<{ file?: File }>({ file: undefined });
+const importError = ref<string>('');
+/** 弹窗关闭即作废进行中的读取，避免取消后异步结果仍写入示例表格。 */
+let importReadVersion: number = 0;
+
+watch(importVisible, visible => {
+  if (!visible) { importReadVersion += 1; }
+}, { flush: 'sync' });
+const importFields = computed<HynDialogField<{ file?: File }>[]>(() => [
+  { key: 'note', type: 'slot', slot: 'importNote', label: '' },
+  { key: 'file', prop: 'file', type: 'filePicker', label: t('hynDocs.demo.file'), fileType: ['json'], fileSize: 1, drag: true, required: true }
+]);
+
+/** 模板直接采用当前 fixture 的完整字段契约，下载不需要服务器。 */
+function downloadTemplate(): void {
+  downloadDemoJson('hyn-table-template.json', initialTableRows.value);
+}
+
+/** 模板采用无时区的本地日期格式；拒绝日期溢出和 Date.parse 的宽松归一化。 */
+function isValidImportDateTime(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)) { return false; }
+  const date = new Date(`${value.replace(' ', 'T')}Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 19).replace('T', ' ') === value;
+}
+
+/** 严格校验完整文件后再写入；数组或对象不能借助字符串转换冒充状态枚举。 */
+function parseImportedRows(text: string): DemoTableRow[] {
+  const value: unknown = JSON.parse(text);
+  if (!Array.isArray(value) || value.length === 0 || value.length > 5000) {
+    throw new TypeError(t('hynDocs.demo.invalidFile'));
+  }
+  const ids = new Set<number>();
+  return value.map((item: unknown): DemoTableRow => {
+    if (!item || typeof item !== 'object') {
+      throw new TypeError(t('hynDocs.demo.invalidFile'));
+    }
+    const row = item as Record<string, unknown>;
+    if (typeof row.id !== 'number' || !Number.isSafeInteger(row.id) || row.id <= 0 || ids.has(row.id)
+      || typeof row.name !== 'string' || !row.name.trim() || typeof row.code !== 'string' || !row.code.trim()
+      || (row.status !== 'enabled' && row.status !== 'disabled') || typeof row.createTime !== 'string'
+      || !isValidImportDateTime(row.createTime) || typeof row.remark !== 'string') {
+      throw new TypeError(t('hynDocs.demo.invalidFile'));
+    }
+    ids.add(row.id);
+    return { id: row.id, name: row.name, code: row.code, status: row.status, createTime: row.createTime, remark: row.remark };
+  });
+}
+
+/** 文件读写错误继续上抛；格式错误留在弹窗内，保证用户能修正后重新导入。 */
+async function importRows(): Promise<void> {
+  if (!importModel.file) {
+    importError.value = t('hynDocs.demo.chooseFile');
+    return;
+  }
+  const file: File = importModel.file;
+  const version: number = ++importReadVersion;
+  let text: string;
+  try {
+    text = await file.text();
+  } catch (error: unknown) {
+    if (version === importReadVersion && importVisible.value) {
+      importError.value = t('hynDocs.demo.fileReadFailed', { name: file.name });
+    }
+    throw error;
+  }
+  if (version !== importReadVersion || !importVisible.value) { return; }
+  try {
+    const incoming = parseImportedRows(text);
+    upsertRows(incoming);
+    demoPage.value = Math.floor(tableRows.value.findIndex(row => row.id === incoming[0].id) / demoPageSize) + 1;
+    importVisible.value = false;
+    modal.msgSuccess(t('hynDocs.demo.imported', { count: incoming.length }));
+  } catch (error: unknown) {
+    if (!(error instanceof SyntaxError || error instanceof TypeError)) { throw error; }
+    importError.value = t('hynDocs.demo.invalidFile');
+  }
+}
+
+/** 删除成功才同步勾选集合，取消确认保留原选择。 */
+async function removeRow(row: DemoTableRow): Promise<void> {
+  if (await deleteRows([row.id])) {
+    selectedRowKeys.value = selectedRowKeys.value.filter(key => key !== row.id);
+    selectedRowCount.value = selectedRowKeys.value.length;
+    demoPage.value = Math.min(demoPage.value, Math.max(1, Math.ceil(tableRows.value.length / demoPageSize)));
+  }
+}
+
+/** 关闭后释放 File 引用，避免下一次误用上次的文件或错误。 */
+function resetImport(): void {
+  importModel.file = undefined;
+  importError.value = '';
+}
 </script>

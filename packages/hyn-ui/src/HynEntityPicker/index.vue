@@ -22,8 +22,8 @@
             />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">{{ t('app.common.search') }}</el-button>
-            <el-button icon="Refresh" @click="resetQuery">{{ t('app.common.reset') }}</el-button>
+            <el-button type="primary" :icon="Search" @click="handleQuery">{{ t('app.common.search') }}</el-button>
+            <el-button :icon="Refresh" @click="resetQuery">{{ t('app.common.reset') }}</el-button>
           </el-form-item>
         </el-form>
       </el-card>
@@ -63,13 +63,15 @@
           </template>
         </hyn-virtual-table>
 
-        <pagination
+        <el-pagination
           v-if="total > 0"
-          v-model:page="queryParams.pageNum"
-          v-model:limit="queryParams.pageSize"
+          v-model:current-page="queryParams.pageNum"
+          v-model:page-size="queryParams.pageSize"
           :total="total"
-          :auto-scroll="false"
-          @pagination="loadRows"
+          class="pagination-container"
+          layout="total, sizes, prev, pager, next"
+          :page-sizes="[10, 20, 50]"
+          @change="loadRows"
         />
       </el-card>
     </div>
@@ -86,8 +88,10 @@
 </template>
 
 <script setup lang="ts" generic="TRow, TQuery extends HynEntityPageQuery">
+import { ElButton, ElCard, ElDialog, ElForm, ElFormItem, ElInput, ElPagination, ElTag } from 'element-plus';
 import type { FormInstance as ElFormInstance } from 'element-plus';
-import { computed, reactive, ref, shallowRef, watch, type Ref } from 'vue';
+import { Search, Refresh } from '@element-plus/icons-vue';
+import { computed, onBeforeUnmount, reactive, ref, shallowRef, watch, type Ref } from 'vue';
 import { useHynI18n } from '@7mrlan/hyn-ui/runtime';
 import HynVirtualTable from '../HynVirtualTable/index.vue';
 import type { HynVirtualTableKey, HynVirtualTableSelectAllChange, HynVirtualTableSelectionChange } from '../HynVirtualTable/types';
@@ -157,6 +161,8 @@ const { t } = useHynI18n();
 const rows = shallowRef<TRow[]>([]);
 // 弹窗分页加载状态和回显解析状态分离，避免远程回显阻塞普通翻页交互。
 const loading = ref(false);
+/** 查询、翻页和关闭共用请求序号，旧请求不能覆盖较新的筛选结果。 */
+let pageLoadVersion: number = 0;
 // 远程分页总数来自 adapter，分页组件和已选汇总共用这一份结果。
 const total = ref(0);
 // 查询对象由 adapter 初始化，组件只追加 pageNum/pageSize 和动态搜索字段。
@@ -201,16 +207,22 @@ function resetQueryParams(): void {
   });
 }
 
-/** 远程加载实体分页，并把当前页数据并入回显缓存。 */
+/** 仅发布最新且仍属于已打开弹窗的查询结果，拒绝把错误响应伪装成空页。 */
 async function loadRows(): Promise<void> {
+  const version: number = ++pageLoadVersion;
+  const query: TQuery = { ...queryParams } as TQuery;
   loading.value = true;
   try {
-    const page = await props.adapter.fetchPage({ ...queryParams } as TQuery);
-    rows.value = page.rows ?? [];
-    total.value = page.total ?? 0;
+    const page = await props.adapter.fetchPage(query);
+    if (version !== pageLoadVersion || !props.visible) { return; }
+    if (!page || !Array.isArray(page.rows) || !Number.isFinite(page.total) || page.total < 0) {
+      throw new TypeError(`HynEntityPicker adapter.fetchPage must return rows[] and a non-negative total. query=${JSON.stringify(query)} response=${JSON.stringify(page)}`);
+    }
+    rows.value = page.rows;
+    total.value = page.total;
     mergeRows(rows.value);
   } finally {
-    loading.value = false;
+    if (version === pageLoadVersion) { loading.value = false; }
   }
 }
 
@@ -276,9 +288,14 @@ watch(
     if (visible) {
       resetQueryParams();
       void loadRows();
+    } else {
+      pageLoadVersion += 1;
+      loading.value = false;
     }
   }
 );
+
+onBeforeUnmount(() => { pageLoadVersion += 1; });
 </script>
 
 <style lang="scss" scoped>

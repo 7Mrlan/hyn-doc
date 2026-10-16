@@ -12,7 +12,9 @@
                     "./runtime":  "./src/runtime/index.ts",
                     "./cron":  "./src/HynCronExpression/quartzCron.ts",
                     "./composables/*":  "./src/composables/*.ts",
-                    "./config":  "./src/config.ts"
+                    "./config":  "./src/config.ts",
+                    "./styles":  "./src/styles/index.scss",
+                    "./locales/*":  "./src/locales/*.ts"
                 },
     "peerDependencies":  {
                              "@element-plus/icons-vue":  "^2.3.2",

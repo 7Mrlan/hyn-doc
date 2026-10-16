@@ -84,7 +84,7 @@ export function isHynDialogOverlayCloseEventForElement(event: Event, element: HT
  * 这些组件的面板通常 teleport 到 `body`，不能依靠弹窗 DOM 卸载。优先向弹窗内的展开触发器派发 Escape，沿用组件自身的状态机和离场动画，不直接篡改 popper DOM。
  */
 function closeHynDialogNativeOverlays(dialogId: string): void {
-  const dialogElement = document.querySelector<HTMLElement>(`[data-hyn-dialog-overlay-id="\${dialogId}"]`);
+  const dialogElement = document.querySelector<HTMLElement>(`[data-hyn-dialog-overlay-id="${CSS.escape(dialogId)}"]`);
   if (!dialogElement) {
     return;
   }

@@ -15,6 +15,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { HynEntityModelValue, HynEntityPageQuery } from '../../HynEntityPicker/types';
 import HynRemoteSelect from '../../HynRemoteSelect/index.vue';
 import { useHynI18n } from '@7mrlan/hyn-ui/runtime';

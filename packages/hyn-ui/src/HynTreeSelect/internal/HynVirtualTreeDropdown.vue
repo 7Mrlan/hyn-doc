@@ -122,6 +122,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElIcon, ElInput, ElPopover, ElTag, ElTooltip, ElTreeV2, vLoading } from 'element-plus';
 import type { Placement } from '@popperjs/core';
 import { ArrowDown, CircleClose, Connection, Search } from '@element-plus/icons-vue';
 import { computed, nextTick, ref, watch } from 'vue';

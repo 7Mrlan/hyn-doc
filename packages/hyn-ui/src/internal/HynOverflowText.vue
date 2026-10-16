@@ -43,6 +43,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElTooltip } from 'element-plus';
 import { computed, inject, nextTick, ref, watch } from 'vue';
 import { HYN_TABLE_TOOLTIP_KEY } from './tableTooltip';
 import type { HynTextOverflowMode } from '../shared/overflow';

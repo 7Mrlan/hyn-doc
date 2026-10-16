@@ -15,6 +15,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { ElInputNumber } from 'element-plus';
 /** Cron 可视化面板中带单位的数字输入控件参数。 */
 interface Props {
   /** 当前数字值，对应某个 Cron 字段的起点、间隔或范围端点。 */

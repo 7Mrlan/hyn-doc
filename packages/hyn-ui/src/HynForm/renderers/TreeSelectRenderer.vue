@@ -21,6 +21,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useHynI18n } from '@7mrlan/hyn-ui/runtime';
 import type { HynTreeSelectModelValue } from '../../HynTreeSelect/types';
 import type { HynFormModel, HynFormRendererProps, HynFormTreeSelectField } from '../types';

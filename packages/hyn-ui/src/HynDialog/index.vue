@@ -45,6 +45,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, ref, watch, useSlots } from 'vue';
+import { ElButton, ElDialog } from 'element-plus';
 import type { FormInstance as ElFormInstance } from 'element-plus';
 import type { FormItemRule } from 'element-plus';
 import { getCurrentInstance } from 'vue';
@@ -107,8 +109,10 @@ const overlayDialogId = `hyn-dialog-${instance?.uid ?? 'unknown'}`;
 const formRef = ref<HynFormExpose>();
 const { t } = useHynI18n();
 const hynConfig = useHynGlobalConfig();
-// 未显式传 confirmLoading 时由弹窗托管异步确认过程，避免按钮提前恢复可点击。
+// 校验和提交共享互斥状态，避免校验等待期间重复触发确认。
 const internalConfirmLoading = ref(false);
+/** 关闭后作废仍在等待校验的任务，避免取消或重开窗口后误提交旧草稿。 */
+let confirmVersion: number = 0;
 // 当前视口宽度参与自动弹窗宽度计算，窗口 resize 时只更新这一处基准状态。
 const viewportWidth = ref(typeof window === 'undefined' ? 0 : window.innerWidth);
 // 配置式弹窗关闭时不需要监听全局 resize；显式标记用于避免打开/关闭循环重复绑定。
@@ -149,15 +153,6 @@ const shouldTrackViewportResize = computed(() => props.modelValue && isConfigFor
 type HynDialogEventKey = 'onConfirm' | 'onSubmit';
 type HynDialogEventHandler = (...args: unknown[]) => unknown;
 
-/** 判断确认处理结果是否为异步任务，只有真实等待接口时才托管按钮 loading。 */
-function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
-  return (
-    (typeof value === 'object' || typeof value === 'function') &&
-    value !== null &&
-    typeof (value as PromiseLike<unknown>).then === 'function'
-  );
-}
-
 /** 读取父组件传入的事件处理函数，便于在 HynDialog 内部等待异步确认完成。 */
 function getDialogEventHandlers(eventKey: HynDialogEventKey): HynDialogEventHandler[] {
   const handler = instance?.vnode.props?.[eventKey] as HynDialogEventHandler | HynDialogEventHandler[] | undefined;
@@ -170,7 +165,7 @@ function getDialogEventHandlers(eventKey: HynDialogEventKey): HynDialogEventHand
   return [];
 }
 
-/** 执行确认类事件；当调用方返回 Promise 时，确定按钮保持 loading 直到 Promise 结束。 */
+/** 等待所有确认处理完成；校验到提交结束的互斥状态统一由 handleConfirm 管理。 */
 async function runConfirmEvent(eventKey: HynDialogEventKey, fallback: () => void, args: unknown[]): Promise<void> {
   const handlers = getDialogEventHandlers(eventKey);
   if (handlers.length === 0) {
@@ -178,18 +173,7 @@ async function runConfirmEvent(eventKey: HynDialogEventKey, fallback: () => void
     return;
   }
 
-  const results = handlers.map(handler => handler(...args));
-  const pendingResults = results.filter(isPromiseLike);
-  if (pendingResults.length === 0) {
-    return;
-  }
-
-  internalConfirmLoading.value = true;
-  try {
-    await Promise.all(pendingResults);
-  } finally {
-    internalConfirmLoading.value = false;
-  }
+  await Promise.all(handlers.map(handler => handler(...args)));
 }
 
 /** 记录当前视口宽度，弹窗打开和窗口缩放时重新计算配置化表单的可用空间。 */
@@ -389,15 +373,24 @@ function resolveDialogWidth(): string {
   return `${Math.min(Math.max(requestedWidth, naturalWidth), getDialogViewportLimit())}px`;
 }
 
-/** 触发确认动作，配置化表单先校验再提交，普通 slot 弹窗保持原 confirm 行为。 */
+/** 校验开始前锁定确认流程，避免快速连点在校验等待期间创建多个提交任务。 */
 async function handleConfirm(): Promise<void> {
-  if (!isConfigForm.value) {
-    await runConfirmEvent('onConfirm', () => emit('confirm'), []);
+  if (confirmButtonLoading.value) {
     return;
   }
-  const valid = await validate();
-  if (valid) {
-    await runConfirmEvent('onSubmit', () => emit('submit', formModel.value), [formModel.value]);
+  const version: number = ++confirmVersion;
+  internalConfirmLoading.value = true;
+  try {
+    if (!isConfigForm.value) {
+      await runConfirmEvent('onConfirm', () => emit('confirm'), []);
+      return;
+    }
+    const valid = await validate();
+    if (valid && version === confirmVersion && props.modelValue) {
+      await runConfirmEvent('onSubmit', () => emit('submit', formModel.value), [formModel.value]);
+    }
+  } finally {
+    if (version === confirmVersion) { internalConfirmLoading.value = false; }
   }
 }
 
@@ -438,6 +431,7 @@ function getFormRef(): ElFormInstance | undefined {
 }
 
 onBeforeUnmount(() => {
+  confirmVersion += 1;
   unbindViewportResize();
 });
 
@@ -448,6 +442,8 @@ watch(
   () => props.modelValue,
   visible => {
     if (!visible) {
+      confirmVersion += 1;
+      internalConfirmLoading.value = false;
       dispatchHynDialogOverlayClose(overlayDialogId);
     }
   },

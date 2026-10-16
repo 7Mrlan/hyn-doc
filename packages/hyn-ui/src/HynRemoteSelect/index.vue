@@ -29,6 +29,7 @@
 </template>
 
 <script setup lang="ts" generic="TRow, TQuery extends HynEntityPageQuery">
+import { ElSelectV2 } from 'element-plus';
 import { computed, getCurrentInstance, nextTick, ref, shallowRef, watch, type Ref } from 'vue';
 import type { HynPageResult } from '../types';
 import { useHynI18n } from '@7mrlan/hyn-ui/runtime';

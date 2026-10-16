@@ -1,0 +1,307 @@
+/* HYN 表单协议：统一配置化表单的栅格、label、控件宽度与控件内部对齐。 */
+
+.hyn-form {
+  width: 100%;
+}
+
+.hyn-form__grid {
+  --hyn-form-columns: 2;
+
+  display: grid;
+  grid-template-columns: repeat(var(--hyn-form-columns), minmax(0, 1fr));
+  column-gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.hyn-form__item {
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 16px;
+
+  &.is-full,
+  &.is-span-2 {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Label slot 的文本行高不同于控件高度，横向布局必须在控件首行居中。
+   高度随换行文本增长，但文本域等高控件仍从首行对齐，避免把 label 拉到整个字段中间。 */
+.hyn-form:not(.is-label-stacked) .el-form-item__label {
+  align-items: center;
+  align-self: flex-start;
+  height: auto;
+  min-height: var(--app-control-height);
+}
+
+.hyn-form__label {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  gap: 4px;
+  line-height: var(--app-line-height-base);
+  white-space: nowrap;
+}
+
+.hyn-form__label-text {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.hyn-form .hyn-form__label-text.hyn-overflow-text {
+  width: auto;
+}
+
+.hyn-form__label-text.is-overflow-fit {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.hyn-form__label-text.is-overflow-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hyn-form__label-text.is-overflow-wrap {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.hyn-form__label-icon {
+  flex: none;
+  color: var(--app-text-muted);
+  font-size: 14px;
+}
+
+/* 顶部 label 沿控件左边缘排列，文本自然换行，不沿用横向布局的控件行高。 */
+.hyn-form.is-label-stacked .el-form-item__label {
+  min-height: 0;
+  justify-content: flex-start;
+  margin-bottom: 6px;
+  line-height: var(--app-line-height-base);
+  white-space: normal;
+}
+
+.hyn-form.is-label-stacked .hyn-form__label {
+  white-space: normal;
+}
+
+.hyn-form .el-form-item__content {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  align-items: center;
+  line-height: normal;
+}
+
+.hyn-form__content {
+  display: flex;
+  flex: 1 1 0;
+  width: 100%;
+  min-width: var(--hyn-form-control-min-width, 160px);
+  align-items: center;
+
+  &.is-control {
+    min-height: var(--app-control-height);
+  }
+
+  &.is-inline {
+    gap: 8px;
+  }
+
+  &.is-section {
+    display: block;
+  }
+}
+
+.hyn-form__content > * {
+  min-width: 0;
+}
+
+.hyn-form .el-input,
+.hyn-form .el-select,
+.hyn-form .el-select-v2,
+.hyn-form .el-tree-select,
+.hyn-form .el-date-editor,
+.hyn-form .el-input-number,
+.hyn-form .el-cascader,
+.hyn-form .hyn-cron-expression,
+.hyn-form .hyn-file-picker,
+.hyn-form .component-upload-image,
+.hyn-form .upload-file {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.hyn-form .el-input__wrapper,
+.hyn-form .el-select__wrapper,
+.hyn-form .el-date-editor,
+.hyn-form .el-range-editor {
+  min-height: var(--app-control-height);
+  box-sizing: border-box;
+}
+
+.hyn-form .el-textarea {
+  width: 100%;
+}
+
+.hyn-form .el-select__wrapper {
+  align-items: center;
+  padding-left: 11px;
+  overflow: hidden;
+}
+
+.hyn-form .el-select__selection {
+  align-items: center;
+  flex-wrap: nowrap;
+  margin-left: 0;
+  padding-left: 0;
+  min-width: 0;
+  min-height: 24px;
+  overflow: hidden;
+}
+
+.hyn-form .el-select__selected-item {
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 24px;
+}
+
+.hyn-form .el-select__input-wrapper {
+  align-items: center;
+  height: 24px;
+}
+
+.hyn-form .el-select__input {
+  height: 24px;
+  line-height: 24px;
+}
+
+.hyn-form .el-select__placeholder {
+  top: 0;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  line-height: 1;
+  transform: none;
+}
+
+.hyn-form .el-select__wrapper .el-tag {
+  display: inline-flex;
+  max-width: min(112px, calc(100% - 32px));
+  align-items: center;
+  height: 22px;
+  line-height: 22px;
+}
+
+.hyn-form .el-select__wrapper .el-tag__content,
+.hyn-form .el-select__wrapper .el-select__tags-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hyn-form .el-select__wrapper .el-tag__close {
+  position: static;
+  display: inline-flex;
+  width: 14px;
+  min-width: 14px;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  visibility: visible;
+}
+
+.hyn-form .el-input-number {
+  display: flex;
+}
+
+.hyn-form .el-input-number .el-input {
+  width: 100%;
+}
+
+.hyn-form .el-input-number .el-input__wrapper {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.hyn-form .el-input-number.is-controls-right .el-input__wrapper {
+  padding-left: 11px;
+  padding-right: 31px;
+}
+
+.hyn-form .el-input-number.is-controls-right .el-input-number__decrease,
+.hyn-form .el-input-number.is-controls-right .el-input-number__increase {
+  width: 30px;
+  height: calc(var(--app-control-height) / 2);
+  line-height: calc(var(--app-control-height) / 2);
+}
+
+.hyn-form.is-label-stacked .hyn-form__content {
+  min-width: 0;
+}
+
+.hyn-form.is-label-stacked .el-form-item__content {
+  width: 100%;
+}
+
+.hyn-form .el-radio-group,
+.hyn-form .el-checkbox-group {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--app-control-height);
+  gap: 0 16px;
+}
+
+.hyn-form .el-radio-group {
+  min-width: max-content;
+  flex-wrap: nowrap;
+}
+
+.hyn-form .el-checkbox-group {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.hyn-form .el-radio,
+.hyn-form .el-checkbox {
+  flex: 0 0 auto;
+  margin-right: 0;
+}
+
+.hyn-form .el-radio__label,
+.hyn-form .el-checkbox__label {
+  white-space: nowrap;
+}
+
+.hyn-form.is-label-stacked .el-radio-group {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.hyn-form.is-label-stacked .el-radio__label,
+.hyn-form.is-label-stacked .el-checkbox__label {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .hyn-form__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hyn-form__item {
+    grid-column: 1 / -1;
+  }
+}

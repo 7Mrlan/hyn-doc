@@ -10,9 +10,12 @@ const docsRoot = resolve(import.meta.dirname, 'src');
 const hynUiRoot = resolve(import.meta.dirname, '../../packages/hyn-ui/src');
 
 export default defineConfig({
-  base: '/hyn-doc/',
+  base: './',
+  // 预览或覆盖发布期间，已打开页面仍引用上一版本的 hash 资源；不能在构建开始时删除它们。
+  build: { emptyOutDir: false },
   resolve: {
     alias: [
+      { find: '@7mrlan/hyn-ui/styles', replacement: `${hynUiRoot}/styles/index.scss` },
       { find: /^@7mrlan\/hyn-ui(.*)$/, replacement: `${hynUiRoot}$1` },
       { find: '@', replacement: docsRoot }
     ]

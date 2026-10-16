@@ -32,11 +32,11 @@
       <hyn-table-dialog
         v-model="dialogVisible"
         :title="t('hynDocs.tableDialog.live.dialogTitle')"
-        :total="demoRows.length"
+        :total="filteredRows.length"
         :selected-count="selectedRowKeys.length"
       >
         <template #filters>
-          <el-form :model="queryParams" :inline="true" class="query-form">
+          <el-form @submit.prevent="searchRows" :model="queryParams" :inline="true" class="query-form">
             <el-form-item :label="t('hynDocs.tableDialog.live.jobName')" prop="jobName">
               <el-input v-model="queryParams.jobName" :placeholder="t('hynDocs.tableDialog.live.jobNamePlaceholder')" clearable />
             </el-form-item>
@@ -47,15 +47,15 @@
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" icon="Search">{{ t('hynDocs.tableDialog.live.search') }}</el-button>
-              <el-button icon="Refresh">{{ t('hynDocs.tableDialog.live.reset') }}</el-button>
+              <el-button type="primary" :icon="Search" @click="searchRows">{{ t('hynDocs.tableDialog.live.search') }}</el-button>
+              <el-button :icon="Refresh" @click="resetQuery">{{ t('hynDocs.tableDialog.live.reset') }}</el-button>
             </el-form-item>
           </el-form>
         </template>
 
         <template #actions>
-          <el-button type="danger" plain icon="Delete" :disabled="selectedRowKeys.length === 0">{{ t('hynDocs.tableDialog.live.delete') }}</el-button>
-          <el-button type="warning" plain icon="Download">{{ t('hynDocs.tableDialog.live.export') }}</el-button>
+          <el-button type="danger" plain :icon="Delete" @click="deleteSelected" :disabled="selectedRowKeys.length === 0">{{ t('hynDocs.tableDialog.live.delete') }}</el-button>
+          <el-button type="warning" plain :icon="Download" @click="exportRows">{{ t('hynDocs.tableDialog.live.export') }}</el-button>
         </template>
 
         <template #table>
@@ -76,7 +76,7 @@
         </template>
 
         <template #pagination>
-          <pagination v-model:page="pageNum" v-model:limit="pageSize" :total="demoRows.length" @pagination="handlePageChange" />
+          <el-pagination v-model:current-page="pageNum" v-model:page-size="pageSize" :total="filteredRows.length" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @change="handlePageChange" />
         </template>
       </hyn-table-dialog>
     </section>
@@ -131,14 +131,25 @@
         </article>
       </div>
     </section>
+    <hyn-dialog v-model="detailVisible" :title="t('hynDocs.demo.detail')" :show-footer="false">
+      <el-descriptions v-if="detailRow" :column="1" border>
+        <el-descriptions-item :label="t('hynDocs.tableDialog.live.columns.id')">{{ detailRow.id }}</el-descriptions-item>
+        <el-descriptions-item :label="t('hynDocs.tableDialog.live.columns.jobName')">{{ t(`hynDocs.tableDialog.live.demoJob.${detailRow.jobNameKey}`) }}</el-descriptions-item>
+        <el-descriptions-item :label="t('hynDocs.tableDialog.live.columns.invokeTarget')">{{ detailRow.invokeTarget }}</el-descriptions-item>
+        <el-descriptions-item :label="t('hynDocs.tableDialog.live.columns.status')">{{ resolveStatusLabel(detailRow.status) }}</el-descriptions-item>
+      </el-descriptions>
+    </hyn-dialog>
+    <p class="hyn-doc-muted">{{ t('hynDocs.demo.session') }}</p>
   </div>
 </template>
 
 <script setup name="HynTableDialogDoc" lang="ts">
-import { View } from '@element-plus/icons-vue';
+import { View, Search, Refresh, Delete, Download } from '@element-plus/icons-vue';
 import type { HynTableColumn, HynTableKey } from '@7mrlan/hyn-ui/types';
 import { useAppI18n } from '@/utils/i18n';
 import DocCodeBlock from '../DocCodeBlock.vue';
+import { useDemoRows } from '../useDemoRows';
+import { downloadDemoJson } from '../download';
 
 type DemoLogStatus = 'success' | 'failure';
 
@@ -195,17 +206,30 @@ const metrics = computed<DocMetric[]>(() => [
   }
 ]);
 
-const demoRows: DemoLogRow[] = Array.from({ length: 36 }, (_, index): DemoLogRow => ({
+/** 日志数据只在浏览器生成，避免文档站接入真实审计信息。 */
+const initialRows = computed<DemoLogRow[]>(() => Array.from({ length: 36 }, (_, index): DemoLogRow => ({
   id: index + 1,
   jobNameKey: index % 2 === 0 ? 'systemDefault' : 'dataSync',
   invokeTarget: index % 2 === 0 ? 'ryTask.RyNoParams' : 'syncTask.execute',
   status: index % 7 === 0 ? 'failure' : 'success',
   createTime: `2026-06-23 10:${String(index).padStart(2, '0')}:00`
-}));
+})));
 
+/** 日志示例同样以稳定编号维护会话内的批量删除结果。 */
+const { rows: demoRows, deleteRows } = useDemoRows<DemoLogRow>(initialRows);
+const appliedQuery = ref<DemoQuery>({ jobName: '', status: '' });
+const detailRow = ref<DemoLogRow>();
+const detailVisible = ref<boolean>(false);
+/** 仅应用已提交的查询条件，输入草稿不会提前改变结果。 */
+const filteredRows = computed<DemoLogRow[]>(() => demoRows.value.filter(row =>
+  t(`hynDocs.tableDialog.live.demoJob.${row.jobNameKey}`).toLowerCase().includes(appliedQuery.value.jobName.toLowerCase())
+  && (!appliedQuery.value.status || row.status === appliedQuery.value.status)
+));
+
+/** 先筛选再分页，保证总数与当前页使用同一数据集合。 */
 const pagedDemoRows = computed<DemoLogRow[]>(() => {
   const startIndex = (pageNum.value - 1) * pageSize.value;
-  return demoRows.slice(startIndex, startIndex + pageSize.value);
+  return filteredRows.value.slice(startIndex, startIndex + pageSize.value);
 });
 
 const tableColumns = computed<HynTableColumn<DemoLogRow>[]>(() => [
@@ -269,6 +293,36 @@ function handlePageChange(): void {
   selectedRowKeys.value = [];
 }
 
-/** 文档示例操作只验证操作列点击闭环，不调用真实业务接口。 */
-function handleView(_row: DemoLogRow): void {}
+/** 详情展示本次点击的实际记录，避免仅有可点击外观的空操作。 */
+function handleView(row: DemoLogRow): void {
+  detailRow.value = { ...row };
+  detailVisible.value = true;
+}
+
+/** 查询按钮提交筛选快照，并回到结果第一页。 */
+function searchRows(): void {
+  appliedQuery.value = { ...queryParams };
+  pageNum.value = 1;
+  selectedRowKeys.value = [];
+}
+
+/** 重置同步清理输入和已应用条件。 */
+function resetQuery(): void {
+  queryParams.jobName = '';
+  queryParams.status = '';
+  searchRows();
+}
+
+/** 批量删除后修正末页页码，避免删除最后一页时显示假空表。 */
+async function deleteSelected(): Promise<void> {
+  if (await deleteRows(selectedRowKeys.value.map(Number))) {
+    selectedRowKeys.value = [];
+    pageNum.value = Math.min(pageNum.value, Math.max(1, Math.ceil(filteredRows.value.length / pageSize.value)));
+  }
+}
+
+/** 导出当前筛选结果，验证工具栏操作而不依赖后端下载接口。 */
+function exportRows(): void {
+  downloadDemoJson('hyn-log-demo.json', filteredRows.value);
+}
 </script>

@@ -59,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElSelectV2 } from 'element-plus';
 import type { Placement } from '@popperjs/core';
 import { computed, useModel, watch } from 'vue';
 import { useHynI18n } from '@7mrlan/hyn-ui/runtime';

@@ -38,13 +38,12 @@
           :row-key="getDemoRowKey"
           selection
           :empty-text="t('hynDocs.virtualTable.live.emptyText')"
-          @selection-change="handleSelectionChange"
-          @select-all-change="handleSelectAllChange"
         >
           <template #status="{ row }">
             <span class="hyn-doc-status" :class="row.status === 'normal' ? 'is-success' : 'is-muted'">{{ row.statusLabel }}</span>
           </template>
         </hyn-virtual-table>
+        <p class="hyn-doc-muted">{{ t('hynDocs.demo.selected', { count: selectedRowKeys.length }) }}</p>
       </div>
     </section>
 
@@ -132,19 +131,22 @@
         </article>
       </div>
     </section>
+
+    <p class="hyn-doc-muted">{{ t('hynDocs.demo.session') }}</p>
+    <hyn-dialog v-if="editModel" v-model="editVisible" :title="t('app.common.edit')" :model="editModel" :fields="editFields" @submit="saveEdit" @cancel="editVisible = false" />
   </div>
 </template>
 
 <script setup name="HynVirtualTableDoc" lang="ts">
 import type {
   HynVirtualTableColumn,
-  HynVirtualTableKey,
-  HynVirtualTableSelectAllChange,
-  HynVirtualTableSelectionChange
+  HynVirtualTableKey
 } from '@7mrlan/hyn-ui/types';
 import { Delete, Edit } from '@element-plus/icons-vue';
 import { useAppI18n } from '@/utils/i18n';
 import DocCodeBlock from '../DocCodeBlock.vue';
+import { useDemoRows } from '../useDemoRows';
+import type { HynDialogField } from '@7mrlan/hyn-ui/types';
 
 type DemoVirtualStatus = 'normal' | 'disabled';
 
@@ -201,7 +203,11 @@ const metrics = computed<DocMetric[]>(() => [
   }
 ]);
 
-const tableRows = computed<DemoVirtualRow[]>(() => createDemoRows(Number(demoSize.value)));
+/** 数据量切换和语言变化共同决定未编辑的虚拟列表 fixture。 */
+const initialTableRows = computed<DemoVirtualRow[]>(() => createDemoRows(Number(demoSize.value)));
+
+/** 本地记录、编辑草稿和删除确认共享相同的示例数据生命周期。 */
+const { rows: tableRows, editModel, editVisible, openEdit, saveEdit, deleteRows } = useDemoRows<DemoVirtualRow>(initialTableRows);
 
 const tableColumns = computed<HynVirtualTableColumn<DemoVirtualRow>[]>(() => [
   { key: 'id', title: t('hynDocs.virtualTable.live.columns.id'), field: 'id', width: 90, align: 'center' },
@@ -215,8 +221,8 @@ const tableColumns = computed<HynVirtualTableColumn<DemoVirtualRow>[]>(() => [
     align: 'center',
     sticky: 'right',
     actions: [
-      { key: 'edit', label: t('hynDocs.virtualTable.live.actions.edit'), icon: Edit, permissions: ['system:user:edit'], onClick: row => handleDemoAction(row) },
-      { key: 'delete', label: t('hynDocs.virtualTable.live.actions.delete'), icon: Delete, type: 'danger', permissions: ['system:user:remove'], onClick: row => handleDemoAction(row) }
+      { key: 'edit', label: t('hynDocs.virtualTable.live.actions.edit'), icon: Edit, permissions: ['system:user:edit'], onClick: openEdit },
+      { key: 'delete', label: t('hynDocs.virtualTable.live.actions.delete'), icon: Delete, type: 'danger', permissions: ['system:user:remove'], onClick: removeRow }
     ]
   }
 ]);
@@ -308,12 +314,15 @@ function handleDemoSizeChange(): void {
   selectedRowKeys.value = [];
 }
 
-/** 文档示例只保留选择事件闭环，真实业务页可在这里同步按钮状态。 */
-function handleSelectionChange(_payload: HynVirtualTableSelectionChange<DemoVirtualRow>): void {}
+/** 编辑字段只覆盖当前行的可变业务内容，编号和树归属保持稳定。 */
+const editFields = computed<HynDialogField<DemoVirtualRow>[]>(() => [
+  { key: 'userName', prop: 'userName', label: t('hynDocs.virtualTable.live.columns.userName'), type: 'input', required: true },
+  { key: 'roleName', prop: 'roleName', label: t('hynDocs.virtualTable.live.columns.roleName'), type: 'input', required: true },
+  { key: 'remark', prop: 'remark', label: t('hynDocs.virtualTable.live.columns.remark'), type: 'textarea' }
+]);
 
-/** 文档示例只保留全选事件闭环，真实业务页可在这里同步跨页选择状态。 */
-function handleSelectAllChange(_payload: HynVirtualTableSelectAllChange<DemoVirtualRow>): void {}
-
-/** 文档示例操作不触发接口，只验证 action cell 的视觉和点击闭环。 */
-function handleDemoAction(_row: DemoVirtualRow): void {}
+/** 成功删除后同时移除已选编号，保持行操作与选择统计一致。 */
+async function removeRow(row: DemoVirtualRow): Promise<void> {
+  if (await deleteRows([row.id])) { selectedRowKeys.value = selectedRowKeys.value.filter(key => key !== row.id); }
+}
 </script>

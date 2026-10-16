@@ -174,6 +174,7 @@
 </template>
 
 <script setup lang="ts" generic="TRow">
+import { ElCheckbox, ElTooltip } from 'element-plus';
 import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch, type CSSProperties } from 'vue';
 import { useVirtualizer } from '@tanstack/vue-virtual';
 import { useHynI18n } from '@7mrlan/hyn-ui/runtime';

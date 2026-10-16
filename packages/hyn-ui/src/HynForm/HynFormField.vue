@@ -3,7 +3,10 @@
 </template>
 
 <script setup lang="ts">
-import type { Component } from 'vue';
+import { computed, defineAsyncComponent } from 'vue';
+import type { AsyncComponentLoader, Component } from 'vue';
+import HynFormFieldLoading from './internal/HynFormFieldLoading.vue';
+import HynFormFieldLoadError from './internal/HynFormFieldLoadError.vue';
 import ChoiceRenderer from './renderers/ChoiceRenderer.vue';
 import CronRenderer from './renderers/CronRenderer.vue';
 import DateRenderer from './renderers/DateRenderer.vue';
@@ -15,13 +18,25 @@ import SelectRenderer from './renderers/SelectRenderer.vue';
 import SwitchRenderer from './renderers/SwitchRenderer.vue';
 import type { HynFormField, HynFormModel, HynFormRendererProps } from './types';
 
-const EditorRenderer = defineAsyncComponent(() => import('./renderers/EditorRenderer.vue'));
-const FilePickerRenderer = defineAsyncComponent(() => import('./renderers/FilePickerRenderer.vue'));
-const FileUploadRenderer = defineAsyncComponent(() => import('./renderers/FileUploadRenderer.vue'));
-const IconSelectRenderer = defineAsyncComponent(() => import('./renderers/IconSelectRenderer.vue'));
-const ImageUploadRenderer = defineAsyncComponent(() => import('./renderers/ImageUploadRenderer.vue'));
-const RemoteSelectRenderer = defineAsyncComponent(() => import('./renderers/RemoteSelectRenderer.vue'));
-const TreeSelectRenderer = defineAsyncComponent(() => import('./renderers/TreeSelectRenderer.vue'));
+/** 所有可选字段共享加载与失败反馈，资源更新后不能静默退化成空白字段。 */
+function createAsyncRenderer(loader: AsyncComponentLoader<Component>): Component {
+  return defineAsyncComponent({ loader, loadingComponent: HynFormFieldLoading, errorComponent: HynFormFieldLoadError, delay: 0 });
+}
+
+/** 富文本宿主适配只在字段使用时加载，降低普通表单首屏开销。 */
+const EditorRenderer = createAsyncRenderer(() => import('./renderers/EditorRenderer.vue'));
+/** 本地文件选择包含上传控件依赖，需要独立的加载与失败反馈。 */
+const FilePickerRenderer = createAsyncRenderer(() => import('./renderers/FilePickerRenderer.vue'));
+/** 附件上传能力由宿主注入，未使用该字段的表单无需加载适配器。 */
+const FileUploadRenderer = createAsyncRenderer(() => import('./renderers/FileUploadRenderer.vue'));
+/** 图标宿主适配延迟到字段实际出现时加载。 */
+const IconSelectRenderer = createAsyncRenderer(() => import('./renderers/IconSelectRenderer.vue'));
+/** 图片附件适配与基础输入字段隔离，保留按需加载边界。 */
+const ImageUploadRenderer = createAsyncRenderer(() => import('./renderers/ImageUploadRenderer.vue'));
+/** 远程选择器仅在使用该字段时引入分页和回显依赖。 */
+const RemoteSelectRenderer = createAsyncRenderer(() => import('./renderers/RemoteSelectRenderer.vue'));
+/** 大树选择器按需加载，加载失败仍在原字段位置报告。 */
+const TreeSelectRenderer = createAsyncRenderer(() => import('./renderers/TreeSelectRenderer.vue'));
 
 const props = defineProps<{
   /** 单个 HYN 字段配置，决定渲染器类型、校验、显隐和禁用规则。 */

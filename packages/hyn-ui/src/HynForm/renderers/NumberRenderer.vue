@@ -12,6 +12,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { ElInputNumber } from 'element-plus';
 import { useHynI18n } from '@7mrlan/hyn-ui/runtime';
 import type { HynFormModel, HynFormNumberField, HynFormRendererProps } from '../types';
 import { getFormFieldValue, setFormFieldValue } from '../utils';

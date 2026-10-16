@@ -1,0 +1,25 @@
+/* 独立宿主只需 Element Plus 与此入口；变量沿用既有 HYN 契约，并允许宿主在后续样式中覆盖。 */
+:root {
+  --app-control-height: 32px;
+  --app-table-row-height: 48px;
+  --app-font-size-base: 14px;
+  --app-font-size-sm: 12px;
+  --app-font-size-caption: 12px;
+  --app-line-height-base: 22px;
+  --app-line-height-sm: 20px;
+  --app-radius-sm: 2px;
+  --app-radius-md: 4px;
+  --app-radius-base: 10px;
+  --app-radius-pill: 999px;
+  --app-surface-bg: var(--el-bg-color);
+  --app-surface-muted: var(--el-fill-color-light);
+  --app-surface-border: var(--el-border-color-light);
+  --app-text-title: var(--el-text-color-primary);
+  --app-text-muted: var(--el-text-color-secondary);
+  --app-accent-strong: var(--el-color-primary);
+  --app-accent-soft: var(--el-color-primary-light-9);
+  --app-accent-subtle: var(--el-color-primary-light-9);
+  --app-accent-border: var(--el-color-primary-light-7);
+  --app-shadow-sm: 0 1px 2px rgb(48 49 51 / 4%);
+  --app-shadow-md: 0 8px 24px rgb(48 49 51 / 8%);
+}

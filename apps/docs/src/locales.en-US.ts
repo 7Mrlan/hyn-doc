@@ -1,4 +1,48 @@
 export default {
+  /** 交互示例专用文案，明确与真实业务持久化隔离。 */
+  demo: {
+    /** Code-copy labels follow the current document language. */
+    copy: 'Copy',
+    /** Success is shown only after the clipboard write completes. */
+    copied: 'Copied',
+    /** Explain the browser security requirement without silently downgrading. */
+    copyFailed: 'Copy failed. Use HTTPS or localhost and allow clipboard access.',
+
+    /** Missing release assets require an explicit recovery action without losing drafts. */
+    resourceLoadFailed: 'Component resources failed to load. This page may be outdated.',
+    /** Refresh resets the demo session, so preserve edits before proceeding. */
+    reloadHint: 'Preserve any unsaved content before refreshing to load the latest resources.',
+    /** File I/O errors must identify the file rather than impersonating JSON validation. */
+    fileReadFailed: 'Cannot read {name}. Please select the file again.',
+
+    /** 提示刷新会恢复 fixture，避免误认为示例已写入服务器。 */
+    session: 'Changes are local to this page session and reset on reload. No business API is called.',
+    /** 本地草稿合并完成后才反馈保存成功。 */
+    saved: 'Demo record saved',
+    /** count 表示实际删除范围，树删除包含后代节点。 */
+    deleteConfirm: 'Delete {count} demo records? Tree nodes include their descendants.',
+    /** 导入弹窗与普通编辑弹窗使用不同标题。 */
+    importTitle: 'Import demo data',
+    /** 明确相同编号采用更新语义，不产生重复记录。 */
+    importTip: 'Choose the JSON template to validate and import locally. Existing IDs are updated.',
+    /** 模板由当前 fixture 生成，字段与本地校验器保持一致。 */
+    template: 'Download JSON template',
+    /** 提交空文件字段时保留弹窗并提示用户选择文件。 */
+    chooseFile: 'Choose a JSON file',
+    /** 集中说明整个文件的校验约束，失败时不部分导入。 */
+    invalidFile: 'Expected a non-empty array with unique positive integer IDs, non-empty name/code, enabled or disabled status, a YYYY-MM-DD HH:mm:ss createTime, and string remark (up to 5000 records).',
+    /** count 只统计完整校验通过并合并的记录。 */
+    imported: 'Imported {count} demo records',
+    /** 本地暂存 File 字段的可访问名称，不表示服务器上传。 */
+    file: 'Data file',
+    /** 日志行操作打开的只读详情标题。 */
+    detail: 'Demo record details',
+    /** 树新增草稿使用可辨识名称，取消前不插入树数据。 */
+    addChild: 'Add child node',
+    /** 选择统计保留 count 插值，与已选主键集合一致。 */
+    selected: '{count} selected'
+  },
+
   layout: {
     skipToContent: 'Skip to content',
     sidebarAria: 'HYN component docs navigation',
@@ -70,8 +114,9 @@ export default {
     reference: {
       kicker: 'Config Table',
       title: 'Supported Settings',
+      /** 配置入口已随组件迁移到独立包，宿主只负责注入。 */
       description:
-        'The HYN-owned config entry is `src/components/Hyn/config.ts`. The root component injects it with `provideHynGlobalConfig(hynGlobalConfig)`; it does not belong in Pinia or Element Plus ConfigProvider.',
+        'The HYN-owned config entry is `packages/hyn-ui/src/config.ts`. The root component injects it with `provideHynGlobalConfig(hynGlobalConfig)`; it does not belong in Pinia or Element Plus ConfigProvider.',
       aria: 'HYN global configuration reference',
       columns: {
         name: 'Config',
@@ -79,10 +124,12 @@ export default {
         description: 'Description'
       },
       rows: {
+        /** 溢出策略类型与运行时默认值分别维护，防止修改类型误改行为。 */
         typeSource:
-          'The three-state protocol type is defined in src/components/Hyn/shared/overflow.ts. It only limits valid values and does not provide a runtime default. Global config, table columns, form labels, and dialog labels all reuse it.',
+          'The three-state protocol type is defined in packages/hyn-ui/src/shared/overflow.ts. It only limits valid values and does not provide a runtime default. Global config, table columns, form labels, and dialog labels all reuse it.',
+        /** 全局默认来源需要指向独立包，供后续维护者核对。 */
         overflowMode:
-          'The runtime default comes from hynGlobalConfig.overflowMode in src/components/Hyn/config.ts, currently fit. It controls the default text overflow strategy for HynTable, HynVirtualTable, HynVirtualTreeTable, HynForm labels, and HynDialog labels.',
+          'The runtime default comes from hynGlobalConfig.overflowMode in packages/hyn-ui/src/config.ts, currently fit. It controls the default text overflow strategy for HynTable, HynVirtualTable, HynVirtualTreeTable, HynForm labels, and HynDialog labels.',
         overflowModeOverride:
           'Table, virtual table, virtual tree table, and column text overflow strategy. When omitted, it inherits hynGlobalConfig.overflowMode.',
         localDefault: 'inherits global',
@@ -100,11 +147,12 @@ export default {
           'Priority is fixed: local prop, column setting, or explicit label config > HYN global config > fit. Every new shared HYN behavior config must be added to this menu, HYN_COMPONENT_SYSTEM.md, and the HYN AI reference.'
       },
       codeTitle: 'Config Entry',
-      code: `// src/components/Hyn/shared/overflow.ts
+      /** 配置示例路径对应独立包实际源码，便于内网代码检索。 */
+      code: `// packages/hyn-ui/src/shared/overflow.ts
 // This type only limits valid values. It does not provide a runtime default.
 export type HynTextOverflowMode = 'fit' | 'ellipsis' | 'wrap';
 
-// src/components/Hyn/config.ts
+// packages/hyn-ui/src/config.ts
 import type { InjectionKey } from 'vue';
 import { inject, provide } from 'vue';
 import type { HynTextOverflowMode } from './shared/overflow';
@@ -129,12 +177,13 @@ provideHynGlobalConfig(hynGlobalConfig);`
       description:
         'This config expresses layout intent, not just a CSS clipping switch. The default fit mode serves complete multilingual display; ellipsis and wrap require an explicit caller choice.',
       codeTitle: 'Three-State Protocol Type Source',
+      /** 展示类型协议与默认配置的职责边界。 */
       code: `// 1. Change the single type source for the three-state protocol; this does not create a default.
-// src/components/Hyn/shared/overflow.ts
+// packages/hyn-ui/src/shared/overflow.ts
 export type HynTextOverflowMode = 'fit' | 'ellipsis' | 'wrap';
 
 // 2. Change the system runtime default only here.
-// src/components/Hyn/config.ts
+// packages/hyn-ui/src/config.ts
 export const hynGlobalConfig: HynGlobalConfig = {
   overflowMode: 'fit'
 };
@@ -192,7 +241,8 @@ const columns: HynTableColumn<UserRow>[] = [
         'Global config is a public HYN contract, not a hidden implementation detail. New configs must update user-facing docs and the AI reference together.',
       cardTitle: 'Acceptance Checklist',
       checks: {
-        configFile: 'The config entry stays in src/components/Hyn/config.ts.',
+        /** 维护规则必须指向迁移后的唯一配置源。 */
+        configFile: 'The config entry stays in packages/hyn-ui/src/config.ts.',
         publicTypes:
           'Public types are exported from the HYN public types entry, so pages do not import internal files.',
         docsPage: 'This menu explains defaults, scope, local override behavior, and validation points.',
@@ -319,10 +369,12 @@ Validation: pnpm i18n:audit passed.`
     hero: {
       kicker: 'HYN Component System',
       title: 'A component map for people and AI',
+      /** 说明静态文档可独立部署，不再要求原业务应用运行。 */
       description:
-        'These docs are available only in local development. They put component selection, configuration examples, visual contracts, and AI constraints behind one verifiable entry point. Production builds do not carry the docs pages or depend on their routes.',
+        'These standalone docs put component selection, examples, visual contracts, and AI rules behind one verifiable entry point. Deploy them to GitHub Pages or an intranet without a business backend.',
       pills: {
-        localOnly: 'Local only',
+        /** 展示独立部署能力，消除旧的仅本地开发限制说明。 */
+        localOnly: 'Standalone',
         aiCopyable: 'AI copyable',
         typedExamples: 'Typed examples',
         visualContract: 'Visual contract'
@@ -331,8 +383,10 @@ Validation: pnpm i18n:audit passed.`
     metrics: {
       routeMode: {
         label: 'Route Mode',
-        value: 'Dev only',
-        note: 'Served through local .local.ts routes and omitted from remote production.'
+        /** 静态部署使用 Hash 路由，服务器无需重写规则。 */
+        value: 'Hash',
+        /** 资源和路由均不绑定 GitHub Pages 子目录。 */
+        note: 'Static Hash routes work at the domain root or any subdirectory.'
       },
       docShape: {
         label: 'Doc Shape',
@@ -465,14 +519,19 @@ Validation: pnpm i18n:audit passed.`
       }
     },
     localOnly: {
-      kicker: 'Local Only',
-      title: 'Local Isolation',
+      /** 部署边界说明作为文档自身的一部分展示。 */
+      kicker: 'Standalone',
+      /** 突出文档与业务宿主之间的隔离契约。 */
+      title: 'Host Boundary',
+      /** 文档可以发布，但不应被业务应用构建打包。 */
       description:
-        'Component docs are local development assets. Remote production should not include docs source, docs markdown, or docs routes.',
+        'The UI package and docs app are maintained separately. Deploy docs as a static site without bundling them into business apps.',
       boundaryTitle: 'Remote Boundary',
       checks: {
-        viewPath: 'Docs pages live under `src/views/component/hyn/` and are included in gitignore.',
-        routePath: 'Docs routes live under `src/router/modules/*.local.ts` and load only under the Vite dev server.',
+        /** 记录页面和组件的当前仓库边界，避免引用迁移前路径。 */
+        viewPath: 'Docs live under `apps/docs/src/docs/pages/`; components live under `packages/hyn-ui/src/`.',
+        /** 开发与生产共享路由，避免只在开发服务器可用。 */
+        routePath: 'Docs routes live under `apps/docs/src/router/index.ts` and work in development and production.',
         noStaticImport: 'Production code does not statically import HYN docs files.',
         localMarkdown: 'Markdown component docs also stay local and do not enter the remote repository.',
         i18nBoundary:
@@ -2317,9 +2376,10 @@ const userTableColumns: HynVirtualTableColumn<UserVO>[] = [
       description:
         'Copy this structure for standalone forms, drawer forms, and non-dialog configuration forms. Create/edit dialogs still prefer HynDialog.',
       codeTitle: 'HynForm',
+      /** 可复制表单示例通过公开包入口导入类型。 */
       code: `<script setup lang="ts">
 import type {'{'} FormRules {'}'} from 'element-plus';
-import type {'{'} HynFormField {'}'} from {'@'}/components/Hyn/types';
+import type {'{'} HynFormField {'}'} from '{'@'}7mrlan/hyn-ui/types';
 
 interface PostForm {'{'}
   postName: string;
@@ -2494,6 +2554,7 @@ src/views/** <el-dialog>`
       description:
         "Business pages should not hand-code Cron slots. Normal create/edit dialogs connect the global component through `type:'cron'`.",
       codeTitle: 'HynForm cron field',
+      /** 提交前校验按需加载公开 Cron 入口，保留原始表达式验证。 */
       code: `const fields = computed<HynFormField<JobForm>[]>(() => [
   {'{'} key: 'jobName', label: t('app.monitorJob.field.jobName'), prop: 'jobName', type: 'input' {'}'},
   {'{'}
@@ -2507,7 +2568,7 @@ src/views/** <el-dialog>`
 ]);
 
 const validateCronExpressionBeforeSubmit = async (): Promise<boolean> => {'{'}
-  const {'{'} getQuartzCronSummary {'}'} = await import('{'@'}/components/Hyn/cron');
+  const {'{'} getQuartzCronSummary {'}'} = await import('{'@'}7mrlan/hyn-ui/cron');
   const summary = getQuartzCronSummary(form.value.cronExpression);
   if (!summary.valid) {'{'}
     modal.msgError(summary.errorMessage ?? t('quartzCron.errors.invalid'));
@@ -2606,7 +2667,8 @@ const validateCronExpressionBeforeSubmit = async (): Promise<boolean> => {'{'}
           name: 'cron.ts / quartzCron.ts',
           description: 'Public Cron helpers and pure Quartz model generation, parsing, summary, and preview logic.',
           points: {
-            publicImport: "Business submit logic imports getQuartzCronSummary from `{'@'}/components/Hyn/cron` only.",
+            /** 调用方依赖公开入口，避免复制原项目内部路径。 */
+            publicImport: "Business submit logic imports getQuartzCronSummary from `{'@'}7mrlan/hyn-ui/cron` only.",
             advancedMode: 'Advanced valid expressions remain in raw mode.',
             splitChunk: 'Croner and cronstrue stay out of the normal form path.'
           }

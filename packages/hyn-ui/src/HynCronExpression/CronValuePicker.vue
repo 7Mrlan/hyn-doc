@@ -46,6 +46,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { ElButton, ElIcon, ElPopover, ElTooltip } from 'element-plus';
 import { ArrowDown, Close } from '@element-plus/icons-vue';
 import { useHynI18n } from '@7mrlan/hyn-ui/runtime';
 

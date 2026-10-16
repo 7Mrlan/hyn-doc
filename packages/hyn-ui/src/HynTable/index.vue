@@ -101,6 +101,7 @@
 </template>
 
 <script setup lang="ts" generic="TRow">
+import { ElTable, ElTableColumn, ElTooltip, vLoading } from 'element-plus';
 import type { TableInstance as ElTableInstance } from 'element-plus';
 import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, useAttrs, watch } from 'vue';
 import { parseTime } from '@7mrlan/hyn-ui/runtime';

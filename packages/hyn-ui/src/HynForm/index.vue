@@ -46,6 +46,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue';
+import { ElForm, ElFormItem, ElIcon, ElTooltip, vLoading } from 'element-plus';
 import type { FormInstance as ElFormInstance } from 'element-plus';
 import type { FormItemRule, FormRules } from 'element-plus';
 import type { CSSProperties } from 'vue';
@@ -243,8 +245,11 @@ function getSharedLabelWidthValue(): number {
   return labelFields.reduce((maxWidth, field) => Math.max(maxWidth, getMeasuredFieldLabelWidth(field)), normalizedLabelWidth.value);
 }
 
-/** 为每个表单项输出最终 label 宽度，保持两列字段舒展，同时让整行长 label 完整显示。 */
+/** 横向字段共享测量宽度；顶部 label 交由容器排版，避免用 CSS 强制覆盖错误的行内宽度。 */
 function getFormItemLabelWidth(field: FormField): string {
+  if (resolvedLabelPosition.value === 'top') {
+    return 'auto';
+  }
   if (!shouldMeasureLabelWidth.value || shouldUseSharedLabelWidth(field)) {
     return resolvedLabelWidth.value;
   }
@@ -357,12 +362,18 @@ function getFirstInvalidProp(errorFields: unknown): string | undefined {
   return keys[0];
 }
 
-/** 校验 HYN 表单，失败时按配置滚动到第一个错误字段。 */
+/** 普通字段校验失败返回 false；未挂载或运行时异常继续抛出，不能伪装成用户输入错误。 */
 async function validate(): Promise<boolean> {
+  if (!formRef.value) { throw new Error('HynForm.validate requires a mounted Element Plus form.'); }
   try {
-    await formRef.value?.validate();
+    await formRef.value.validate();
     return true;
-  } catch (errorFields) {
+  } catch (errorFields: unknown) {
+    if (errorFields instanceof Error) { throw errorFields; }
+    if (!errorFields || typeof errorFields !== 'object' || Array.isArray(errorFields)
+      || Object.keys(errorFields).length === 0 || !Object.values(errorFields).every(Array.isArray)) {
+      throw new TypeError('Unexpected Element Plus form validation failure.', { cause: errorFields });
+    }
     const firstInvalidProp = getFirstInvalidProp(errorFields);
     if (props.scrollToError && firstInvalidProp) {
       formRef.value?.scrollToField(firstInvalidProp);

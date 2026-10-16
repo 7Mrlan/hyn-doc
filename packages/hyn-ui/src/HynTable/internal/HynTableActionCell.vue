@@ -46,6 +46,7 @@
 </template>
 
 <script setup lang="ts" generic="TRow">
+import { ElButton, ElTooltip } from 'element-plus';
 import { computed, inject } from 'vue';
 import { checkPermi } from '@7mrlan/hyn-ui/runtime';
 import { HYN_TABLE_TOOLTIP_KEY } from '../../internal/tableTooltip';

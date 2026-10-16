@@ -10,6 +10,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { ElSwitch } from 'element-plus';
 import type { HynFormModel, HynFormOptionValue, HynFormRendererProps, HynFormSwitchField } from '../types';
 import { getFormFieldValue, setFormFieldValue } from '../utils';
 

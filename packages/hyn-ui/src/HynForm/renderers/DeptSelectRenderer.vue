@@ -17,6 +17,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useHynI18n } from '@7mrlan/hyn-ui/runtime';
 import type { HynDeptSelectModelValue } from '../../HynDeptSelect/types';
 import type { HynFormDeptSelectField, HynFormModel, HynFormRendererProps } from '../types';

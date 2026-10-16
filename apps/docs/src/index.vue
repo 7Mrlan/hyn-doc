@@ -245,14 +245,11 @@ const localOnlyChecks = computed<string[]>(() => [
   t('hynDocs.home.localOnly.checks.i18nBoundary')
 ]);
 
-const grepExample = `git check-ignore -v HYN_COMPONENT_SYSTEM.md \\
-  .codex/skills/frontend-crud-coding/references/hyn-components.md \\
-  src/views/component/hyn/index.vue \\
-  src/router/modules/hyn-component-docs.local.ts
-
-rg "<el-table|<el-dialog" src/views
-rg "dialog-form|dialog-grid-form|permission-dialog-form" src/views
-rg ":deep\\(\\.el-form-item|:deep\\(\\.el-input-number|:deep\\(\\.el-table" src/views`;
+/** 独立文档仓库的可执行验收入口，与 README 保持一致。 */
+const grepExample = `corepack pnpm@10.0.0 ui:typecheck
+corepack pnpm@10.0.0 docs:typecheck
+corepack pnpm@10.0.0 docs:build
+corepack pnpm@10.0.0 docs:test`;
 
 /** 将文档状态枚举转换成当前语言展示标签。 */
 const resolveStatusLabel = (status: HynComponentDocEntry['status']): string => {

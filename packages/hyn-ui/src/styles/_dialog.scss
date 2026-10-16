@@ -1,0 +1,56 @@
+/* HYN 弹窗壳协议：外壳控制最大尺寸，body 是唯一默认滚动容器。 */
+
+.hyn-dialog {
+  display: flex;
+  width: min(var(--el-dialog-width, 560px), calc(100vw - 40px));
+  max-width: calc(100vw - 40px);
+  max-height: calc(100dvh - 48px);
+  flex-direction: column;
+
+  .el-dialog__header,
+  .el-dialog__footer {
+    flex: none;
+  }
+
+  .el-dialog__body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+.hyn-dialog__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 20px 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+
+  &.is-scroll-none {
+    overflow: hidden;
+  }
+}
+
+.el-overlay .el-overlay-dialog .hyn-dialog .el-dialog__body {
+  padding: 0 !important;
+}
+
+.hyn-dialog__body > * {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .hyn-dialog {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  .hyn-dialog__body {
+    padding: 14px 14px 10px;
+  }
+}

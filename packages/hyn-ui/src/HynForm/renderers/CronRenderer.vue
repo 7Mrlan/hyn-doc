@@ -8,6 +8,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import HynCronExpression from '../../HynCronExpression/index.vue';
 import type { HynFormCronField, HynFormModel, HynFormRendererProps } from '../types';
 import { getFormFieldValue, setFormFieldValue } from '../utils';

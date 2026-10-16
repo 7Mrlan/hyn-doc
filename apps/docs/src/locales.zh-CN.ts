@@ -1,4 +1,48 @@
 export default {
+  /** 交互示例专用文案，明确与真实业务持久化隔离。 */
+  demo: {
+    /** 代码复制动作与语言切换共用响应式文案。 */
+    copy: '复制',
+    /** 只有实际完成剪贴板写入才显示成功。 */
+    copied: '已复制',
+    /** 明确浏览器安全上下文和权限要求，不执行隐式降级。 */
+    copyFailed: '复制失败，请使用 HTTPS 或 localhost，并允许浏览器写入剪贴板。',
+
+    /** 站点更新后旧 chunk 不可用时，告知真实故障而不自动丢弃草稿。 */
+    resourceLoadFailed: '组件资源加载失败，当前页面可能已过期。',
+    /** 刷新会重置示例会话，必须让用户在操作前知道。 */
+    reloadHint: '请先保留尚未保存的内容，再刷新页面加载最新资源。',
+    /** 文件读取失败需要指出具体文件，不能误报为 JSON 格式错误。 */
+    fileReadFailed: '无法读取文件 {name}，请重新选择文件。',
+
+    /** 提示刷新会恢复 fixture，避免误认为示例已写入服务器。 */
+    session: '示例数据仅在当前页面会话内修改，刷新后恢复，不调用业务接口。',
+    /** 本地草稿合并完成后才反馈保存成功。 */
+    saved: '示例记录已保存',
+    /** count 表示实际删除范围，树删除包含后代节点。 */
+    deleteConfirm: '确认删除 {count} 条示例记录？树节点包含其后代。',
+    /** 导入弹窗与普通编辑弹窗使用不同标题。 */
+    importTitle: '导入示例数据',
+    /** 明确相同编号采用更新语义，不产生重复记录。 */
+    importTip: '选择 JSON 模板文件，在当前页面本地校验并导入；相同编号会更新原记录。',
+    /** 模板由当前 fixture 生成，字段与本地校验器保持一致。 */
+    template: '下载 JSON 模板',
+    /** 提交空文件字段时保留弹窗并提示用户选择文件。 */
+    chooseFile: '请选择 JSON 文件',
+    /** 集中说明整个文件的校验约束，失败时不部分导入。 */
+    invalidFile: '文件必须是非空记录数组，包含唯一的正整数 id、非空 name/code、enabled 或 disabled 状态，以及 YYYY-MM-DD HH:mm:ss 格式的 createTime 和 remark 字符串（最多 5000 条）。',
+    /** count 只统计完整校验通过并合并的记录。 */
+    imported: '已导入 {count} 条示例记录',
+    /** 本地暂存 File 字段的可访问名称，不表示服务器上传。 */
+    file: '数据文件',
+    /** 日志行操作打开的只读详情标题。 */
+    detail: '示例记录详情',
+    /** 树新增草稿使用可辨识名称，取消前不插入树数据。 */
+    addChild: '新增子节点',
+    /** 选择统计保留 count 插值，与已选主键集合一致。 */
+    selected: '已选择 {count} 条'
+  },
+
   layout: {
     skipToContent: '跳到内容',
     sidebarAria: 'HYN 组件文档导航',
@@ -65,8 +109,9 @@ export default {
     reference: {
       kicker: '配置表',
       title: '当前支持项',
+      /** 配置入口已随组件迁移到独立包，宿主只负责注入。 */
       description:
-        'HYN 自有配置入口是 `src/components/Hyn/config.ts`。根组件通过 `provideHynGlobalConfig(hynGlobalConfig)` 注入，不放进 Pinia，也不混入 Element Plus ConfigProvider。',
+        'HYN 自有配置入口是 `packages/hyn-ui/src/config.ts`。根组件通过 `provideHynGlobalConfig(hynGlobalConfig)` 注入，不放进 Pinia，也不混入 Element Plus ConfigProvider。',
       aria: 'HYN 全局配置说明',
       columns: {
         name: '配置',
@@ -74,10 +119,12 @@ export default {
         description: '说明'
       },
       rows: {
+        /** 溢出策略类型与运行时默认值分别维护，防止修改类型误改行为。 */
         typeSource:
-          '三态协议类型定义在 src/components/Hyn/shared/overflow.ts。它只限制可选值，不提供运行时默认值；全局配置、表格列、表单 label 和弹窗 label 都复用这个类型。',
+          '三态协议类型定义在 packages/hyn-ui/src/shared/overflow.ts。它只限制可选值，不提供运行时默认值；全局配置、表格列、表单 label 和弹窗 label 都复用这个类型。',
+        /** 全局默认来源需要指向独立包，供后续维护者核对。 */
         overflowMode:
-          '运行时默认值来自 src/components/Hyn/config.ts 的 hynGlobalConfig.overflowMode，当前为 fit；它控制 HynTable、HynVirtualTable、HynVirtualTreeTable、HynForm label 和 HynDialog label 的默认文本溢出策略。',
+          '运行时默认值来自 packages/hyn-ui/src/config.ts 的 hynGlobalConfig.overflowMode，当前为 fit；它控制 HynTable、HynVirtualTable、HynVirtualTreeTable、HynForm label 和 HynDialog label 的默认文本溢出策略。',
         overflowModeOverride: '表格、虚拟表、虚拟树表和列级文本溢出策略；不传时继承 hynGlobalConfig.overflowMode。',
         localDefault: '继承全局',
         labelOverflowMode:
@@ -94,11 +141,12 @@ export default {
           '优先级固定为：局部 prop、列配置或 label 显式配置 > HYN 全局配置 > fit。新增 HYN 公共行为配置必须同步补到本菜单、HYN_COMPONENT_SYSTEM.md 和 HYN AI reference。'
       },
       codeTitle: '配置入口',
-      code: `// src/components/Hyn/shared/overflow.ts
+      /** 配置示例路径对应独立包实际源码，便于内网代码检索。 */
+      code: `// packages/hyn-ui/src/shared/overflow.ts
 // 这个 type 只限制合法值，不提供运行时默认值。
 export type HynTextOverflowMode = 'fit' | 'ellipsis' | 'wrap';
 
-// src/components/Hyn/config.ts
+// packages/hyn-ui/src/config.ts
 import type { InjectionKey } from 'vue';
 import { inject, provide } from 'vue';
 import type { HynTextOverflowMode } from './shared/overflow';
@@ -123,12 +171,13 @@ provideHynGlobalConfig(hynGlobalConfig);`
       description:
         '这个配置表达布局意图，不只是 CSS 裁剪开关。默认 fit 服务多语言完整展示，ellipsis 和 wrap 需要调用方明确选择。',
       codeTitle: '三态协议类型源头',
+      /** 展示类型协议与默认配置的职责边界。 */
       code: `// 1. 修改三态协议的唯一类型源头；这里不会产生默认值
-// src/components/Hyn/shared/overflow.ts
+// packages/hyn-ui/src/shared/overflow.ts
 export type HynTextOverflowMode = 'fit' | 'ellipsis' | 'wrap';
 
 // 2. 全系统运行时默认策略只改这里
-// src/components/Hyn/config.ts
+// packages/hyn-ui/src/config.ts
 export const hynGlobalConfig: HynGlobalConfig = {
   overflowMode: 'fit'
 };
@@ -180,7 +229,8 @@ const columns: HynTableColumn<UserRow>[] = [
       description: '全局配置是 HYN 公共契约，不是隐藏实现细节。新增配置必须同步更新用户可见文档和 AI reference。',
       cardTitle: '验收清单',
       checks: {
-        configFile: '配置入口仍保持在 src/components/Hyn/config.ts。',
+        /** 维护规则必须指向迁移后的唯一配置源。 */
+        configFile: '配置入口仍保持在 packages/hyn-ui/src/config.ts。',
         publicTypes: '公共类型从 HYN public types 入口暴露，不让页面导入内部文件。',
         docsPage: '本菜单必须写清默认值、作用范围、局部覆盖方式和验证要点。',
         overview: '全局配置相关内容继续放在本菜单；总览保持精简，只放入口级信息，不承载完整配置协议。',
@@ -298,10 +348,12 @@ const columns: HynTableColumn<UserRow>[] = [
     hero: {
       kicker: 'HYN 组件体系',
       title: '给人和 AI 共用的组件地图',
+      /** 说明静态文档可独立部署，不再要求原业务应用运行。 */
       description:
-        '这套文档只在本地开发环境使用，目标是把组件选型、配置示例、视觉契约和 AI 禁止项放到同一个可验证入口。生产远端不携带文档页，也不依赖文档路由。',
+        '这套独立文档把组件选型、配置示例、视觉契约和 AI 规则放到同一个可验证入口，可部署到 GitHub Pages 或公司内网，无需业务系统。',
       pills: {
-        localOnly: '仅本地',
+        /** 展示独立部署能力，消除旧的仅本地开发限制说明。 */
+        localOnly: '独立部署',
         aiCopyable: 'AI 可复制',
         typedExamples: '类型化示例',
         visualContract: '视觉契约'
@@ -310,8 +362,10 @@ const columns: HynTableColumn<UserRow>[] = [
     metrics: {
       routeMode: {
         label: '路由模式',
-        value: '仅开发',
-        note: '通过本地 .local.ts 路由访问，远端生产不携带。'
+        /** 静态部署使用 Hash 路由，服务器无需重写规则。 */
+        value: 'Hash',
+        /** 资源和路由均不绑定 GitHub Pages 子目录。 */
+        note: '静态 Hash 路由，根目录和任意子目录均可部署。'
       },
       docShape: {
         label: '文档形态',
@@ -433,15 +487,21 @@ const columns: HynTableColumn<UserRow>[] = [
       }
     },
     localOnly: {
-      kicker: '仅本地',
-      title: '本地化隔离',
-      description: '组件文档是本地开发资产，生产远端不应包含文档源码、文档 markdown 或文档路由。',
+      /** 部署边界说明作为文档自身的一部分展示。 */
+      kicker: '独立部署',
+      /** 突出文档与业务宿主之间的隔离契约。 */
+      title: '独立宿主边界',
+      /** 文档可以发布，但不应被业务应用构建打包。 */
+      description: '组件包与文档站分离维护。文档静态产物可独立部署，不进入业务应用构建。',
       boundaryTitle: '远端边界',
       checks: {
-        viewPath: '文档页位于 `src/views/component/hyn/`，已加入 gitignore。',
-        routePath: '文档路由位于 `src/router/modules/*.local.ts`，只在 Vite dev server 下加载。',
+        /** 记录页面和组件的当前仓库边界，避免引用迁移前路径。 */
+        viewPath: '文档页位于 `apps/docs/src/docs/pages/`，组件位于 `packages/hyn-ui/src/`。',
+        /** 开发与生产共享路由，避免只在开发服务器可用。 */
+        routePath: '文档路由位于 `apps/docs/src/router/index.ts`，开发和生产使用同一套路由。',
         noStaticImport: '生产代码不静态 import HYN 文档文件。',
-        localMarkdown: 'markdown 组件文档也只保留在本地，不进入远端。',
+        /** 说明交付目录和运行环境，不要求内网服务器安装构建工具。 */
+        localMarkdown: '部署时只复制 `apps/docs/dist/`，运行无需源码、GitHub 或 Node.js。',
         i18nBoundary:
           '文档页和本地 demo 的可见文本使用 `hynDocs.*`；真实业务数据仍按后端 key 或 localized 字段契约处理。'
       },
@@ -2165,9 +2225,10 @@ const userTableColumns: HynVirtualTableColumn<UserVO>[] = [
       title: '普通表单模板',
       description: '独立表单、抽屉表单、非弹窗配置表单复制这个结构；新增/编辑弹窗仍优先使用 HynDialog。',
       codeTitle: 'HynForm',
+      /** 可复制表单示例通过公开包入口导入类型。 */
       code: `<script setup lang="ts">
 import type {'{'} FormRules {'}'} from 'element-plus';
-import type {'{'} HynFormField {'}'} from {'@'}/components/Hyn/types';
+import type {'{'} HynFormField {'}'} from '{'@'}7mrlan/hyn-ui/types';
 
 interface PostForm {'{'}
   postName: string;
@@ -2330,6 +2391,7 @@ src/views/** <el-dialog>`
       title: '字段配置',
       description: "业务页不要再手写 Cron slot；普通新增/编辑弹窗通过 `type:'cron'` 接入全局组件。",
       codeTitle: 'HynForm cron field',
+      /** 提交前校验按需加载公开 Cron 入口，保留原始表达式验证。 */
       code: `const fields = computed<HynFormField<JobForm>[]>(() => [
   {'{'} key: 'jobName', label: t('app.monitorJob.field.jobName'), prop: 'jobName', type: 'input' {'}'},
   {'{'}
@@ -2343,7 +2405,7 @@ src/views/** <el-dialog>`
 ]);
 
 const validateCronExpressionBeforeSubmit = async (): Promise<boolean> => {'{'}
-  const {'{'} getQuartzCronSummary {'}'} = await import('{'@'}/components/Hyn/cron');
+  const {'{'} getQuartzCronSummary {'}'} = await import('{'@'}7mrlan/hyn-ui/cron');
   const summary = getQuartzCronSummary(form.value.cronExpression);
   if (!summary.valid) {'{'}
     modal.msgError(summary.errorMessage ?? t('quartzCron.errors.invalid'));
@@ -2438,7 +2500,8 @@ const validateCronExpressionBeforeSubmit = async (): Promise<boolean> => {'{'}
           name: 'cron.ts / quartzCron.ts',
           description: '公共 Cron helper 和纯 Quartz 模型生成、解析、说明、预览逻辑。',
           points: {
-            publicImport: "业务提交前只从 `{'@'}/components/Hyn/cron` 导入 getQuartzCronSummary。",
+            /** 调用方依赖公开入口，避免复制原项目内部路径。 */
+            publicImport: "业务提交前只从 `{'@'}7mrlan/hyn-ui/cron` 导入 getQuartzCronSummary。",
             advancedMode: '高级合法表达式保持原始模式。',
             splitChunk: 'Croner/cronstrue 不进入普通表单主路径。'
           }

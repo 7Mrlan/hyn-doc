@@ -8,6 +8,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { getHynHostComponent } from '@7mrlan/hyn-ui/runtime';
 import type { HynFormFileUploadField, HynFormModel, HynFormRendererProps } from '../types';
 import { getFormFieldValue, setFormFieldValue } from '../utils';

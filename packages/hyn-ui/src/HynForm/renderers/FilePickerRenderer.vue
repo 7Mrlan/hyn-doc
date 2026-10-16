@@ -30,6 +30,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue';
+import { ElButton, ElIcon, ElUpload, useFormItem } from 'element-plus';
 import type { UploadInstance as ElUploadInstance } from 'element-plus';
 import type { UploadFile, UploadRawFile, UploadUserFile } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
@@ -40,6 +42,8 @@ import { getFormFieldValue, setFormFieldValue } from '../utils';
 
 const props = defineProps<HynFormRendererProps>();
 const { t } = useHynI18n();
+/** 原生 Upload 不触发表单字段校验事件；有效文件写入后主动清除旧的必填错误。 */
+const { formItem } = useFormItem();
 
 const filePickerRef = ref<ElUploadInstance>();
 const fileList = ref<UploadUserFile[]>([]);
@@ -145,6 +149,7 @@ function handleFileChange(file: UploadFile): void {
     return;
   }
   modelValue.value = file.raw;
+  formItem?.clearValidate();
 }
 
 /** 限制导入类字段一次只选择一个文件，避免模型值语义变成数组。 */

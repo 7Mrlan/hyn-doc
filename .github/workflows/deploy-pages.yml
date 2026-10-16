@@ -38,8 +38,16 @@ jobs:
         run: pnpm ui:typecheck
       - name: Type-check documentation app
         run: pnpm docs:typecheck
+      - name: Build standalone package consumer
+        run: pnpm ui:consumer-check
+      - name: Check package style and translation contracts
+        run: pnpm docs:contracts
       - name: Build documentation app
         run: pnpm docs:build
+      - name: Install browser for smoke checks
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Check production examples and portable deployment
+        run: pnpm docs:test
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact

@@ -11,6 +11,9 @@
         </span>
       </router-link>
 
+      <select v-model="locale" class="hyn-doc-language" aria-label="Language / 语言">
+        <option value="zh_CN">简体中文</option><option value="en_US">English</option>
+      </select>
       <nav class="hyn-doc-nav">
         <router-link
           class="hyn-doc-nav__item"

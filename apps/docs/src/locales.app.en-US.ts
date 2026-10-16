@@ -135,60 +135,6 @@ export default {
       bindingPasswordRequired: 'Enter password'
     }
   },
-  common: {
-    action: 'Actions',
-    add: 'Add',
-    back: 'Back',
-    clear: 'Clear',
-    cancel: 'Cancel',
-    close: 'Close',
-    confirm: 'Confirm',
-    delete: 'Delete',
-    deleteSuccess: 'Deleted successfully',
-    detail: 'Details',
-    edit: 'Edit',
-    endDate: 'End date',
-    export: 'Export',
-    hideSearch: 'Hide search',
-    import: 'Import',
-    index: 'No.',
-    loading: 'Loading...',
-    loadingMore: 'Loading more...',
-    more: 'More',
-    noData: 'No data',
-    no: 'No',
-    refresh: 'Refresh',
-    remark: 'Remark',
-    reset: 'Reset',
-    search: 'Search',
-    showColumns: 'Show/Hide columns',
-    showSearch: 'Show search',
-    startDate: 'Start date',
-    status: 'Status',
-    submit: 'Submit',
-    success: 'Operation successful',
-    yes: 'Yes'
-  },
-  hynForm: {
-    inputPlaceholder: 'Enter {label}',
-    selectPlaceholder: 'Select {label}',
-    required: '{label} is required',
-    filePicker: {
-      chooseFile: 'Choose file',
-      dragText: 'Drop files here, or',
-      fileTypeSeparator: ', ',
-      typeTip: 'Only {types} files are allowed.',
-      invalidType: 'Invalid file type. Please choose {types} files.',
-      invalidSize: 'File size must not exceed {size} MB',
-      singleFileOnly: 'Only one file can be selected'
-    }
-  },
-  hynTreeSelect: {
-    searchPlaceholder: 'Search node name or ID',
-    linkage: 'Parent-child',
-    linkageEnabledTip: 'On: selecting a parent also selects all descendants',
-    linkageDisabledTip: 'Off: parent and child nodes can be selected independently'
-  },
   generator: {
     addTitle: 'Add {name}',
     collapseAll: 'Collapse All',
@@ -379,16 +325,6 @@ export default {
     videoInvalidSize: 'Video size cannot exceed {size} MB.',
     videoUploading: 'Uploading video, please wait...',
     editorPlaceholder: 'Enter content'
-  },
-  table: {
-    collapseRow: 'Collapse',
-    expandRow: 'Expand',
-    expandingRootLevel: 'Expanding root level',
-    loadFailed: 'Load failed',
-    loadingChildren: 'Loading child nodes',
-    selectAll: 'Select all',
-    selectRow: 'Select row {index}',
-    totalSelected: '{total} records, {selected} selected.'
   },
   toolGen: {
     searchKicker: 'Search Filters',

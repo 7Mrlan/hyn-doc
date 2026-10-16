@@ -1,5 +1,5 @@
 import type { Component, Ref } from 'vue';
-import { inject, provide } from 'vue';
+import { hasInjectionContext, inject, provide } from 'vue';
 
 export interface HynDeptTreeNode {
   id: string | number;
@@ -42,8 +42,9 @@ export const provideHynRuntime = (runtime: HynRuntime): void => {
   provide(hynRuntimeKey, runtime);
 };
 
+/** 组件优先使用所属宿主的注入；事件回调和纯解析入口读取已配置的运行时，不能在无注入上下文时调用 inject。 */
 export const useHynRuntime = (): HynRuntime => {
-  const injectedRuntime = inject<HynRuntime | undefined>(hynRuntimeKey, undefined);
+  const injectedRuntime = hasInjectionContext() ? inject<HynRuntime | undefined>(hynRuntimeKey, undefined) : undefined;
   const runtime = injectedRuntime ?? configuredHynRuntime;
   if (!runtime) {
     throw new Error('HYN runtime is not configured. Call configureHynRuntime before mounting HYN components.');
@@ -64,4 +65,5 @@ export const modal: HynModalService = {
   msgSuccess: (message: string): void => useHynRuntime().modal.msgSuccess(message)
 };
 export const loadHynDeptTree = (): Promise<HynDeptTreeNode[]> => useHynRuntime().loadDeptTree();
+/** 从宿主获取富文本、文件等业务控件，避免组件包绑定原业务项目的具体实现。 */
 export const getHynHostComponent = (name: keyof HynHostComponents): Component => useHynRuntime().hostComponents[name];

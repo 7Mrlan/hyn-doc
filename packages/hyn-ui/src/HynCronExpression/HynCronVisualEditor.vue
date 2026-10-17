@@ -1,5 +1,5 @@
 <template>
-  <el-tabs v-model="activeTabModel" type="border-card" class="quartz-cron-editor">
+  <el-tabs ref="editorTabsRef" v-model="activeTabModel" type="border-card" class="quartz-cron-editor" :style="editorStyle">
     <el-tab-pane v-for="tab in cronTabs" :key="tab.key" :name="tab.key">
       <template #label>
         <span class="quartz-cron-editor__tab-label" :class="{ 'is-constrained': isConstrainedTab(tab) }" :title="getTabTitle(tab)">
@@ -302,10 +302,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import type { TabsInstance } from 'element-plus';
 import { ElIcon, ElOption, ElRadioGroup, ElSelect, ElTabPane, ElTabs } from 'element-plus';
 import { Calendar } from '@element-plus/icons-vue';
 import { useHynI18n } from '@7mrlan/hyn-ui/runtime';
+import { useHynGlobalConfig } from '../config';
+import { measureHynTextWidth, resolveHynMeasureFont } from '../shared/overflow';
 import CronNumberUnit from './CronNumberUnit.vue';
 import CronOptionRow from './CronOptionRow.vue';
 import CronValuePicker from './CronValuePicker.vue';
@@ -375,7 +378,37 @@ type CronTabConfig = SimpleFieldConfig | DayFieldConfig;
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
-const { t } = useHynI18n();
+const { t, locale } = useHynI18n();
+/** 内部规则标签与表单继承同一全局溢出策略。 */
+const hynConfig = useHynGlobalConfig();
+/** ellipsis/wrap 保留原有标题列基线，fit 在此基础上按最长文案扩展。 */
+const minimumRuleLabelWidth = 128;
+/** 同一页签的参数起点使用统一测量宽度。 */
+const ruleLabelWidth = ref<number>(minimumRuleLabelWidth);
+/** 页签实例提供实际字体和可见规则的测量根节点。 */
+const editorTabsRef = ref<TabsInstance>();
+/** 标题列宽在所有规则行之间共享，避免完整单行标签与右侧控件重叠。 */
+const editorStyle = computed<Record<string, string>>(() => ({
+  '--cron-option-label-width': `${ruleLabelWidth.value}px`
+}));
+
+/** 读取页签真实根节点，避免把组件实例当作 DOM 测量。 */
+function resolveEditorTabsElement(): HTMLElement | undefined {
+  const element = editorTabsRef.value?.$el;
+  return element instanceof HTMLElement ? element : undefined;
+}
+
+/** 按真实字体测量当前可见规则；语言、页签或全局策略切换后重新计算。 */
+async function updateRuleLabelWidth(): Promise<void> {
+  await nextTick();
+  const labels = Array.from(resolveEditorTabsElement()?.querySelectorAll<HTMLElement>('.cron-option-row__title') ?? []);
+  ruleLabelWidth.value = hynConfig.overflowMode === 'fit'
+    ? labels.filter(label => label.getClientRects().length > 0).reduce((width, label) => Math.max(width, measureHynTextWidth(label.textContent ?? '', resolveHynMeasureFont(label, undefined))), minimumRuleLabelWidth)
+    : minimumRuleLabelWidth;
+}
+
+watch(() => [props.activeTab, locale.value, hynConfig.overflowMode], updateRuleLabelWidth, { flush: 'post' });
+onMounted(updateRuleLabelWidth);
 
 // Cron 可视化页签通过 computed 桥接 v-model，保证父组件只接收合法页签值。
 const activeTabModel = computed<QuartzCronTabKey>({
@@ -682,17 +715,6 @@ function applyCalendarTimeSafety(): void {
   align-items: center;
 }
 
-.quartz-cron-editor__week-select :deep(.el-select__selection) {
-  min-width: 0;
-  align-items: center;
-  flex-wrap: nowrap;
-  overflow: hidden;
-}
-
-.quartz-cron-editor__week-select :deep(.el-select__selected-item) {
-  min-width: 0;
-}
-
 @media (max-width: 640px) {
   .quartz-cron-editor {
     :deep(.el-tabs__content) {
@@ -700,8 +722,5 @@ function applyCalendarTimeSafety(): void {
     }
   }
 
-  .quartz-cron-editor__week-select {
-    width: min(180px, 100%);
-  }
 }
 </style>

@@ -6,18 +6,38 @@
   </hyn-dialog>
   <button type="button" @click="pickerVisible = true">Open race picker</button>
   <hyn-entity-picker v-model="selected" v-model:visible="pickerVisible" title="Race check" :adapter="adapter" :columns="columns" :search-fields="searchFields" />
+  <hyn-virtual-table data-testid="scroll-table" :rows="scrollRows" :columns="scrollColumns" :row-key="scrollRowKey" :height="240" />
+  <hyn-virtual-tree-table data-testid="scroll-tree-table" :rows="scrollTreeRows" :columns="scrollTreeColumns" :row-key="scrollRowKey" :height="240" />
+  <select v-model="overflowConfig.overflowMode" data-testid="overflow-mode" aria-label="Overflow mode"><option>fit</option><option>ellipsis</option><option>wrap</option></select>
+  <div data-testid="policy-editor" style="width: min(800px, 100%)"><hyn-cron-visual-editor v-model:active-tab="cronTab" :model="cronModel" :disabled="false" /></div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
 import type { FormRules } from 'element-plus';
-import { HynDialog, HynEntityPicker } from '@7mrlan/hyn-ui';
-import type { HynDialogField, HynEntityAdapter, HynEntityModelValue, HynEntityPageQuery, HynEntityPickerColumn, HynEntitySearchField, HynPageResult } from '@7mrlan/hyn-ui/types';
+import { HynDialog, HynEntityPicker, HynVirtualTable, HynVirtualTreeTable } from '@7mrlan/hyn-ui';
+import type { HynDialogField, HynEntityAdapter, HynEntityModelValue, HynEntityPageQuery, HynEntityPickerColumn, HynEntitySearchField, HynPageResult, HynVirtualTableColumn, HynVirtualTreeTableColumn, HynVirtualTreeTableRow } from '@7mrlan/hyn-ui/types';
+import { provideHynGlobalConfig, type HynGlobalConfig } from '@7mrlan/hyn-ui/config';
+import { parseQuartzExpressionToModel, type QuartzCronTabKey } from '@7mrlan/hyn-ui/cron';
+import HynCronVisualEditor from '../../../packages/hyn-ui/src/HynCronExpression/HynCronVisualEditor.vue';
 
 /** 测试宿主只提供组件公开字段协议，验证真实表单校验与原生下拉的关闭行为。 */
 interface CheckForm { name: string; category: string }
 interface CheckEntity { id: number; name: string }
 interface CheckQuery extends HynEntityPageQuery { name: string }
+
+/** 大数据集通过真实虚拟组件渲染，验证主题出口和滚动层叠，宿主不加载文档站样式。 */
+const scrollRows: CheckEntity[] = Array.from({ length: 1000 }, (_, index) => ({ id: index + 1, name: `Row ${index + 1}` }));
+const scrollColumns: HynVirtualTableColumn<CheckEntity>[] = [{ key: 'name', title: 'Name', minWidth: 900 }];
+const scrollTreeColumns: HynVirtualTreeTableColumn<CheckEntity>[] = [{ key: 'name', title: 'Tree name', tree: true, minWidth: 900 }];
+const scrollTreeRows: HynVirtualTreeTableRow<CheckEntity>[] = scrollRows.map(row => ({ key: row.id, row, depth: 0, hasChildren: false, expanded: false }));
+/** 两种组件都通过稳定业务主键保持虚拟行身份。 */
+const scrollRowKey = (row: CheckEntity): number => row.id;
+/** 测试通过公开 provider 实时切换策略，不替换组件内部 computed 或 DOM 样式。 */
+const overflowConfig = reactive<HynGlobalConfig>({ overflowMode: 'fit' });
+provideHynGlobalConfig(overflowConfig);
+const cronTab = ref<QuartzCronTabKey>('day');
+const cronModel = ref(parseQuartzExpressionToModel('0 0 12 * * ?', 2026).model);
 
 const dialogVisible = ref<boolean>(false);
 const submitCount = ref<number>(0);

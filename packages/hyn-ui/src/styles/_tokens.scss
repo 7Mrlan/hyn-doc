@@ -1,5 +1,8 @@
 /* 独立宿主只需 Element Plus 与此入口；变量沿用既有 HYN 契约，并允许宿主在后续样式中覆盖。 */
 :root {
+  // 虚拟表头固定在滚动内容上方，独立宿主也必须提供不透明的表头表面与文字色。
+  --tableHeaderBg: var(--el-fill-color-light);
+  --tableHeaderTextColor: var(--el-text-color-primary);
   --app-control-height: 32px;
   --app-table-row-height: 48px;
   --app-font-size-base: 14px;

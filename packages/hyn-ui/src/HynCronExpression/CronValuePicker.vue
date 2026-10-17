@@ -22,7 +22,7 @@
     </template>
 
     <div class="cron-value-picker__panel" :style="panelStyle">
-      <div class="cron-value-picker__grid" :style="gridStyle" role="listbox" :aria-label="ariaLabel">
+      <div class="cron-value-picker__grid" role="listbox" :aria-label="ariaLabel">
         <button
           v-for="option in options"
           :key="option.value"
@@ -75,7 +75,7 @@ interface Props {
   triggerWidth: string;
   /** 弹层宽度，按候选项数量和列数预先约束。 */
   popoverWidth: number;
-  /** 候选项网格列数，用于秒、分、星期等不同密度的面板。 */
+  /** 候选项期望列数；窄屏或本地化标签较长时允许整项换行。 */
   columns: number;
 }
 
@@ -96,10 +96,6 @@ const triggerStyle = computed<Record<string, string>>(() => ({
 // Cron 下拉面板尺寸集中在 computed 中输出，避免模板和样式层重复拼接宽高。
 const panelStyle = computed<Record<string, string>>(() => ({
   '--cron-picker-columns': String(props.columns)
-}));
-// Cron 候选网格列数由取值范围推导，保持键盘扫描和视觉分组一致。
-const gridStyle = computed<Record<string, string>>(() => ({
-  gridTemplateColumns: `repeat(${props.columns}, minmax(0, 1fr))`
 }));
 // 选中值集合用于常数时间判断候选项状态，避免每个格子重复遍历数组。
 const selectedValueSet = computed<Set<number>>(() => new Set(props.modelValue));
@@ -184,7 +180,8 @@ function emitOrderedValues(values: number[]): void {
 }
 
 .cron-value-picker__grid {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   max-height: 260px;
   min-width: 0;
   gap: 6px;
@@ -194,8 +191,12 @@ function emitOrderedValues(values: number[]): void {
 }
 
 .cron-value-picker__chip {
-  min-width: 0;
+  // 数字和单位必须占据同一个选项；空间不足时整项换行，不能把单位挤出固定高度。
+  flex: 0 0 calc((100% - (var(--cron-picker-columns) - 1) * 6px) / var(--cron-picker-columns));
+  min-width: max-content;
+  box-sizing: border-box;
   height: 30px;
+  padding: 0 2px;
   border: 1px solid #d9e2dd;
   border-radius: 6px;
   background: #fbfdfc;
@@ -204,6 +205,7 @@ function emitOrderedValues(values: number[]): void {
   font-size: 12px;
   line-height: 28px;
   text-align: center;
+  white-space: nowrap;
   transition:
     background-color 0.16s ease,
     border-color 0.16s ease,

@@ -16,6 +16,8 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: '@7mrlan/hyn-ui/styles', replacement: `${hynUiRoot}/styles/index.scss` },
+      // 源码别名与包 exports 指向同一模块，避免类型检查和真实宿主导入不同的 Cron API。
+      { find: '@7mrlan/hyn-ui/cron', replacement: `${hynUiRoot}/HynCronExpression/quartzCron.ts` },
       { find: /^@7mrlan\/hyn-ui(.*)$/, replacement: `${hynUiRoot}$1` },
       { find: '@', replacement: docsRoot }
     ]

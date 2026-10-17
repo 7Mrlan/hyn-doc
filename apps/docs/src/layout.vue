@@ -1,6 +1,6 @@
 <template>
   <div class="hyn-doc-shell">
-    <a class="hyn-doc-skip" href="#hyn-doc-main">{{ t('hynDocs.layout.skipToContent') }}</a>
+    <a class="hyn-doc-skip" href="#hyn-doc-main" @click.prevent="focusContent">{{ t('hynDocs.layout.skipToContent') }}</a>
 
     <aside class="hyn-doc-sidebar" :aria-label="t('hynDocs.layout.sidebarAria')">
       <router-link class="hyn-doc-brand" to="/component/hyn" @click="handleNavClick('/component/hyn', $event)">
@@ -11,10 +11,7 @@
         </span>
       </router-link>
 
-      <select v-model="locale" class="hyn-doc-language" aria-label="Language / 语言">
-        <option value="zh_CN">简体中文</option><option value="en_US">English</option>
-      </select>
-      <nav class="hyn-doc-nav">
+      <nav ref="navRef" class="hyn-doc-nav">
         <router-link
           class="hyn-doc-nav__item"
           to="/component/hyn"
@@ -38,6 +35,16 @@
           <small>{{ t(entry.captionKey) }}</small>
         </router-link>
       </nav>
+      <div class="hyn-doc-preferences">
+        <label for="hyn-doc-language">{{ t('hynDocs.layout.language') }}</label>
+        <div class="hyn-doc-language-control">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9" /><ellipse cx="12" cy="12" rx="4" ry="9" /><path d="M3 12h18" /></svg>
+          <select id="hyn-doc-language" v-model="locale" class="hyn-doc-language">
+            <option value="zh_CN">简体中文</option><option value="en_US">English</option>
+          </select>
+          <svg class="hyn-doc-language-control__arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
+        </div>
+      </div>
     </aside>
 
     <main id="hyn-doc-main" ref="contentRef" class="hyn-doc-content" tabindex="-1">
@@ -76,6 +83,8 @@ interface TocItem {
 const route = useRoute();
 const { t, locale } = useAppI18n();
 const contentRef = ref<HTMLElement | null>(null);
+/** 当前文档导航项需要在桌面纵向列表和手机横向列表中保持可见。 */
+const navRef = ref<HTMLElement | null>(null);
 const tocItems = ref<TocItem[]>([]);
 const docEntries = getSortedHynComponentDocEntries();
 let tocFrame = 0;
@@ -102,6 +111,11 @@ const handleNavClick = (targetPath: string, event: MouseEvent): void => {
   if (route.path.replace(/\/+$/, '') === targetPath) {
     event.preventDefault();
   }
+};
+
+/** 跳过导航只移动键盘焦点，不能让锚点覆盖文档站的 Hash 路由。 */
+const focusContent = (): void => {
+  contentRef.value?.focus({ preventScroll: true });
 };
 
 /**
@@ -149,11 +163,12 @@ const scheduleRefreshToc = (): void => {
 };
 
 /**
- * 切换文档路由后重置主内容滚动区，并重建页内目录。
+ * 切换文档后重置阅读位置、保持当前导航项可见，并重建页内目录。
  */
 const scrollContentToTop = async (): Promise<void> => {
   await nextTick();
   contentRef.value?.scrollTo({ top: 0, behavior: 'auto' });
+  navRef.value?.querySelector<HTMLElement>('.is-active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   scheduleRefreshToc();
 };
 
@@ -161,7 +176,7 @@ const scrollContentToTop = async (): Promise<void> => {
  * 在文档滚动容器内定位到指定标题。
  */
 const scrollToHeading = (id: string): void => {
-  contentRef.value?.querySelector<HTMLElement>(`#${CSS.escape(id)}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  contentRef.value?.querySelector<HTMLElement>(`#${CSS.escape(id)}`)?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 };
 
 watch(
@@ -181,7 +196,7 @@ watch(
 );
 
 onMounted(() => {
-  scheduleRefreshToc();
+  void scrollContentToTop();
   docPreloadTimer = window.setTimeout(() => {
     preloadAllHynDocPages();
   }, 320);
@@ -311,6 +326,62 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
+.hyn-doc-preferences {
+  display: grid;
+  flex: none;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--hyn-doc-border);
+}
+
+.hyn-doc-preferences > label {
+  color: var(--hyn-doc-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hyn-doc-language-control {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  color: var(--hyn-doc-primary-strong);
+}
+
+.hyn-doc-language-control > svg {
+  position: absolute;
+  left: 12px;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.hyn-doc-language-control > .hyn-doc-language-control__arrow {
+  right: 12px;
+  left: auto;
+  width: 16px;
+  height: 16px;
+}
+
+.hyn-doc-language {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0 36px;
+  border: 1px solid var(--hyn-doc-border);
+  border-radius: 10px;
+  appearance: none;
+  background: #fff;
+  color: var(--hyn-doc-ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.hyn-doc-language:focus-visible {
+  outline: 2px solid var(--hyn-doc-primary-strong);
+  outline-offset: 3px;
+}
+
 .hyn-doc-brand {
   display: flex;
   min-width: 0;
@@ -424,6 +495,12 @@ onBeforeUnmount(() => {
   scrollbar-width: thin;
 }
 
+.hyn-doc-content:focus-visible {
+  outline: 2px solid var(--hyn-doc-primary-strong);
+  outline-offset: 3px;
+  border-radius: var(--hyn-doc-radius);
+}
+
 .hyn-doc-toc {
   align-self: start;
   display: grid;
@@ -474,6 +551,7 @@ onBeforeUnmount(() => {
 
 .hyn-doc-hero {
   display: grid;
+  min-width: 0;
   grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   padding: clamp(26px, 4vw, 42px);
@@ -487,7 +565,8 @@ onBeforeUnmount(() => {
   margin: 10px 0 0;
   color: var(--hyn-doc-ink);
   font-size: clamp(40px, 5.6vw, 72px);
-  line-height: 0.96;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
   letter-spacing: 0;
 }
 
@@ -818,7 +897,6 @@ onBeforeUnmount(() => {
 }
 
 .hyn-doc-demo-frame {
-  min-height: 360px;
   padding: 14px;
   overflow: hidden;
 }
@@ -926,17 +1004,44 @@ onBeforeUnmount(() => {
   .hyn-doc-shell {
     height: 100dvh;
     grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
     gap: 14px;
     padding: 14px;
   }
 
   .hyn-doc-sidebar {
-    max-height: 260px;
+    max-height: none;
+  }
+
+  .hyn-doc-brand {
+    padding: 14px 18px;
+  }
+
+  .hyn-doc-preferences {
+    grid-template-columns: auto minmax(0, 160px);
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
   }
 
   .hyn-doc-nav {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    flex: none;
+    flex-direction: row;
+    gap: 6px;
+    padding: 10px 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-gutter: auto;
+  }
+
+  .hyn-doc-nav__item {
+    flex: none;
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  .hyn-doc-nav__item small {
+    display: none;
   }
 
   .hyn-doc-hero,
@@ -956,7 +1061,6 @@ onBeforeUnmount(() => {
     padding: 12px;
   }
 
-  .hyn-doc-nav,
   .hyn-doc-grid,
   .hyn-doc-grid.is-two,
   .hyn-doc-grid.is-four {
@@ -966,6 +1070,11 @@ onBeforeUnmount(() => {
   .hyn-doc-hero,
   .hyn-doc-section {
     padding: 20px;
+  }
+
+  .hyn-doc-hero h1 {
+    font-size: clamp(24px, 6.4vw, 40px);
+    line-height: 1.16;
   }
 
   .hyn-doc-api-table__row,

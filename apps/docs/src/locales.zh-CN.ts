@@ -44,6 +44,8 @@ export default {
   },
 
   layout: {
+    /** 侧栏工具区的语言选择标签。 */
+    language: '文档语言',
     skipToContent: '跳到内容',
     sidebarAria: 'HYN 组件文档导航',
     brandTitle: '组件图谱',

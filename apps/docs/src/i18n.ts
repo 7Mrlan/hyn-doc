@@ -23,7 +23,10 @@ const i18n = createI18n({
   }
 });
 
-/** 文档与组件运行时共享语言状态，切换后同步刷新文案。 */
-watch(docsLocale, locale => { i18n.global.locale.value = locale; });
+/** 文档、组件运行时和辅助技术使用同一语言，初次加载与切换时同步 HTML lang。 */
+watch(docsLocale, locale => {
+  i18n.global.locale.value = locale;
+  document.documentElement.lang = locale === 'zh_CN' ? 'zh-CN' : 'en-US';
+}, { immediate: true });
 
 export default i18n;

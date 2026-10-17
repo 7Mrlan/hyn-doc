@@ -21,9 +21,18 @@ const visibleDayFieldModes = new Set<QuartzDayFieldMode>([
   'nthWeek'
 ]);
 
+/** Croner 10 显式启用 Quartz 的年份、星期编号和数字步进协议，与业务系统保持一致。 */
 const quartzCronOptions: CronOptions = {
+  // 文档只计算预览，不注册实际调度任务。
   paused: true,
-  legacyMode: false
+  // Quartz 表达式允许第七段年份，不能按 Unix 的五/六段规则解析。
+  mode: '6-or-7-parts',
+  // Quartz 从 1=周日开始编号，不能沿用 Unix 的 0=周日。
+  alternativeWeekdays: true,
+  // 可视化编辑器会输出 0/5 等以数字起点描述的步进。
+  sloppyRanges: true,
+  // 日/周的 ? 互斥由上层校验，匹配时保持 Quartz 的 AND 语义。
+  domAndDow: true
 };
 
 const quartzWeekNameToValue: Record<string, number> = {

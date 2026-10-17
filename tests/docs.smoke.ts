@@ -347,7 +347,201 @@ async function runConsumerAdversarialSmoke(browser: Browser, origin: string): Pr
     await page.waitForLoadState('networkidle');
     assert.equal(await picker.getByText('slow', { exact: true }).count(), 0);
     assert.equal(await picker.getByText('fast', { exact: true }).count(), 1);
+    await picker.getByRole('button', { name: '取消', exact: true }).click();
+    await picker.waitFor({ state: 'hidden' });
+    await page.setViewportSize({ width: 640, height: 1000 });
+    for (const tableSelector of ['[data-testid="scroll-table"]', '[data-testid="scroll-tree-table"]']) {
+      const table = page.locator(tableSelector);
+      await table.locator('[class$="__scroll"]').hover();
+      await page.mouse.wheel(300, 480);
+      await page.waitForFunction(selector => (document.querySelector(`${selector} [class$="__scroll"]`)?.scrollTop ?? 0) > 0, tableSelector);
+      const header = table.locator('[class$="__header"]');
+      assert.match(await header.evaluate(element => getComputedStyle(element).backgroundColor), /^rgb\(/, 'Standalone sticky headers require an opaque exported theme color');
+      assert.ok(Math.abs(await table.evaluate(element => element.querySelector('[class$="__header"]')!.getBoundingClientRect().top - element.querySelector('[class$="__scroll"]')!.getBoundingClientRect().top)) < 1);
+      assert.ok(await table.locator('[class$="__row"]').count() < 80, '1000 records must remain virtual after scrolling');
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    for (const mode of ['fit', 'ellipsis', 'wrap', 'fit']) {
+      await page.getByTestId('overflow-mode').selectOption(mode);
+      const titles = page.getByTestId('policy-editor').locator('.cron-option-row__title:visible');
+      await page.waitForFunction(expected => Array.from(document.querySelectorAll('[data-testid="policy-editor"] .cron-option-row__title')).filter(element => element.getClientRects().length > 0).every(element => getComputedStyle(element).whiteSpace === expected), mode === 'wrap' ? 'normal' : 'nowrap');
+      if (mode === 'fit') { assert.ok(await titles.evaluateAll(elements => elements.every(element => element.scrollWidth <= element.clientWidth + 1)), 'Fit labels require enough shared column width'); }
+      if (mode === 'wrap') { assert.ok(await titles.evaluateAll(elements => elements.some(element => element.getBoundingClientRect().height > 25)), 'Only wrap mode permits multi-line rule labels'); }
+    }
     console.log('PASS independent consumer: double-submit lock, cancel during validation, native overlay close, real HTTP response race');
+    console.log('PASS standalone virtual table and tree: opaque sticky headers, two-axis scrolling and bounded DOM');
+    console.log('PASS Cron rule labels inherit global fit, ellipsis and wrap policies');
+  } finally {
+    await page.close();
+  }
+}
+
+/** 验证真实文档外壳的语言、键盘导航和窄屏边界，避免视觉修复只在截图尺寸成立。 */
+async function runPresentationSmoke(browser: Browser, origin: string): Promise<void> {
+  const page: Page = await browser.newPage({ locale: 'zh-CN', reducedMotion: 'reduce' });
+  page.setDefaultTimeout(10000);
+  page.on('pageerror', error => failures.push(error.message));
+  page.on('console', message => { if (message.type() === 'error' || message.type() === 'warning') { failures.push(message.text()); } });
+  try {
+    for (const width of [1920, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${origin}/intranet/component-docs/#/component/hyn/virtual-tree-table`, { waitUntil: 'networkidle' });
+      await page.locator('main h1').filter({ hasText: 'HynVirtualTreeTable' }).waitFor();
+      for (const language of ['en_US', 'zh_CN']) {
+        await page.locator('.hyn-doc-language').selectOption(language);
+        await page.waitForFunction(expected => document.documentElement.lang === expected, language === 'en_US' ? 'en-US' : 'zh-CN');
+        assert.ok(await page.locator('main h1').evaluate(element => element.getBoundingClientRect().right <= document.querySelector('main')!.getBoundingClientRect().right), 'Long component titles must stay in the reading column');
+        assert.ok(await page.locator('.hyn-doc-language').evaluate(element => {
+          const control: DOMRect = element.getBoundingClientRect();
+          const sidebar: DOMRect = document.querySelector('.hyn-doc-sidebar')!.getBoundingClientRect();
+          return control.left - sidebar.left >= 12 && sidebar.right - control.right >= 12;
+        }), 'Language preference needs consistent sidebar insets');
+        const route: string = page.url();
+        await page.locator('.hyn-doc-skip').focus();
+        await page.keyboard.press('Enter');
+        assert.equal(page.url(), route, 'Skip navigation must preserve the hash route');
+        assert.equal(await page.evaluate(() => document.activeElement?.id), 'hyn-doc-main');
+      }
+      await page.goto(`${origin}/intranet/component-docs/#/component/hyn/virtual-table`, { waitUntil: 'networkidle' });
+      await page.locator('main h1').filter({ hasText: 'HynVirtualTable' }).waitFor();
+      await page.getByText('5000', { exact: true }).click();
+      await page.locator('.hyn-table__scroll').hover();
+      await page.mouse.wheel(600, 480);
+      await page.waitForFunction(() => (document.querySelector('.hyn-table__scroll')?.scrollTop ?? 0) > 0);
+      assert.match(await page.locator('.hyn-table__header').evaluate(element => getComputedStyle(element).backgroundColor), /^rgb\(/);
+      assert.ok(await page.locator('.hyn-table__row').count() < 80, '5000 documentation records must remain virtual');
+      console.log(`PASS document presentation: ${width}px, both languages, skip link, title bounds, language insets and scrolled 5000-row header`);
+    }
+  } finally {
+    await page.close();
+  }
+}
+
+/** 检查文字真实排版边界，防止单位换行后溢出到相邻选项或滚动区域。 */
+async function assertCronPickerLabels(page: Page): Promise<void> {
+  await page.locator('.cron-value-picker-popper:visible .cron-value-picker__chip').first().waitFor({ state: 'visible' });
+  const issues: string[] = await page.locator('.cron-value-picker-popper:visible .cron-value-picker__chip').evaluateAll(buttons => buttons.flatMap(button => {
+    const text: Range = document.createRange();
+    text.selectNodeContents(button);
+    const bounds: DOMRect = button.getBoundingClientRect();
+    const lines: DOMRect[] = Array.from(text.getClientRects()).filter(rect => rect.width > 0);
+    const grid: DOMRect | undefined = button.parentElement?.getBoundingClientRect();
+    const clipped: boolean = lines.length !== 1 || lines.some(line => line.left < bounds.left || line.right > bounds.right || line.top < bounds.top || line.bottom > bounds.bottom);
+    return clipped || !grid || bounds.left < grid.left - 1 || bounds.right > grid.right + 1
+      ? [`${button.textContent?.trim()}: label wraps or exceeds its option/grid bounds`] : [];
+  }));
+  assert.deepEqual(issues, [], 'Each complete Cron label must fit inside its own clickable option');
+}
+
+/** 单选回显由绝对定位元素承载，必须检查祖先裁切，innerText 非空不能证明用户看得见。 */
+async function assertWeekdayLabels(page: Page): Promise<void> {
+  const issues: string[] = await page.locator('.quartz-cron-editor__week-select:visible').evaluateAll(selects => selects.flatMap(select => {
+    const label: HTMLElement | null = select.querySelector('.el-select__placeholder > span');
+    if (!label?.textContent?.trim()) { return ['Weekday label is empty']; }
+    const text: DOMRect = label.getBoundingClientRect();
+    for (let parent: HTMLElement | null = label.parentElement; parent && select.contains(parent); parent = parent.parentElement) {
+      const style: CSSStyleDeclaration = getComputedStyle(parent);
+      const bounds: DOMRect = parent.getBoundingClientRect();
+      const clipsX: boolean = /hidden|clip|auto|scroll/.test(style.overflowX);
+      const clipsY: boolean = /hidden|clip|auto|scroll/.test(style.overflowY);
+      if (clipsX && (text.left < bounds.left - 1 || text.right > bounds.right + 1) || clipsY && (text.top < bounds.top - 1 || text.bottom > bounds.bottom + 1)) {
+        return [`${label.textContent}: ${parent.className} clips selected text`];
+      }
+    }
+    return [];
+  }));
+  assert.deepEqual(issues, [], 'Default and selected weekdays must actually be visible inside the control');
+}
+
+/** 窄屏页签可能被 Element Plus 的导航箭头遮住，使用真实键盘激活而不是强行点击。 */
+async function activateCronTab(page: Page, index: number): Promise<void> {
+  const tabs = page.getByRole('tab');
+  const count: number = await tabs.count();
+  await tabs.nth((index + count - 1) % count).press('ArrowRight');
+  await page.waitForFunction(selected => document.querySelectorAll('[role="tab"]')[selected]?.getAttribute('aria-selected') === 'true', index);
+}
+
+/** 在中英文和窄屏下遍历所有共享选择器，并验证指定日期确实写入和保存 Cron 表达式。 */
+async function runCronPickerSmoke(browser: Browser, origin: string): Promise<void> {
+  const page: Page = await browser.newPage({ locale: 'zh-CN' });
+  const errors: string[] = [];
+  page.setDefaultTimeout(10000);
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error' || message.type() === 'warning') { errors.push(message.text()); } });
+  try {
+    for (const language of ['zh_CN', 'en_US']) {
+      for (const width of [1440, 390, 320]) {
+        await page.setViewportSize({ width, height: 1000 });
+        // 相同 hash URL 的跳转可能复用已保存的示例状态，各尺寸必须从新的页面实例开始。
+        await page.goto('about:blank');
+        await page.goto(`${origin}/intranet/component-docs/#/component/hyn/cron-expression`, { waitUntil: 'networkidle' });
+        await page.locator('.hyn-doc-language').selectOption(language);
+        await page.locator('.hyn-cron-expression button').first().click();
+        await page.locator('.quartz-cron-editor').waitFor();
+        for (const tabIndex of [0, 1, 2, 3, 4, 5]) {
+          await activateCronTab(page, tabIndex);
+          const row = page.locator('.cron-option-row:visible').filter({ has: page.locator('.cron-value-picker__trigger') }).first();
+          await row.locator('.cron-option-row__title').click();
+          await row.locator('button').click();
+          await page.locator('.cron-value-picker-popper:visible').waitFor();
+          assert.equal(await page.locator('.cron-value-picker-popper:visible .cron-value-picker__chip').count(), [60, 60, 24, 31, 12, 130][tabIndex]);
+          await assertCronPickerLabels(page);
+          // 加粗的选中态同样参与固有宽度计算，不能只验证未选中的短标签。
+          await page.locator('.cron-value-picker-popper:visible .cron-value-picker__chip').last().click();
+          await assertCronPickerLabels(page);
+          await row.locator('button').click();
+          await page.locator('.cron-value-picker-popper:visible').waitFor({ state: 'hidden' });
+        }
+        await activateCronTab(page, 3);
+        assert.equal(await page.locator('.quartz-cron-editor__week-select:visible').count(), 3);
+        await assertWeekdayLabels(page);
+        assert.ok((await page.locator('.quartz-cron-editor__week-select:visible .el-select__placeholder').allTextContents()).every(text => /^1 -/.test(text.trim())), 'All weekday rules start with a concrete Sunday value');
+        for (const index of [0, 1, 2]) {
+          const rule = page.locator('.cron-option-row:visible').filter({ has: page.locator('.quartz-cron-editor__week-select') }).nth(index);
+          await rule.locator('.cron-option-row__title').click();
+          await rule.locator('.el-select__wrapper').click();
+          const optionsId: string | null = await rule.getByRole('combobox').getAttribute('aria-controls');
+          assert.ok(optionsId);
+          const options = page.locator(`#${optionsId}`);
+          await options.getByRole('option').nth(3).click();
+          await options.waitFor({ state: 'hidden' });
+          if (index === 2) { await rule.locator('.el-input-number__increase').click(); }
+          assert.equal((await page.locator('.hyn-cron-dialog__chip-code').innerText()).split(/\s+/)[5], ['4/1', '4L', '4#2'][index]);
+          assert.match(await rule.locator('.el-select__placeholder').innerText(), /^4 -/, 'The displayed weekday must match the selected Quartz value');
+          await assertWeekdayLabels(page);
+        }
+        const weekRow = page.locator('.cron-option-row:visible').filter({ has: page.locator('.cron-value-picker__trigger') }).nth(1);
+        await weekRow.locator('.cron-option-row__title').click();
+        await weekRow.locator('button').click();
+        await assertCronPickerLabels(page);
+        assert.equal(await page.locator('.cron-value-picker-popper:visible .cron-value-picker__chip').count(), 7);
+        await weekRow.locator('button').click();
+        await page.locator('.cron-value-picker-popper:visible').waitFor({ state: 'hidden' });
+        const dayRow = page.locator('.cron-option-row:visible').filter({ has: page.locator('.cron-value-picker__trigger') }).first();
+        await dayRow.locator('.cron-option-row__title').click();
+        await dayRow.locator('button').click();
+        await page.locator('.cron-value-picker__footer:visible button').click();
+        // 清空会按组件契约返回“每天”并关闭选择器，重新指定日期后再验证多选。
+        await page.locator('.cron-value-picker-popper:visible').waitFor({ state: 'hidden' });
+        await dayRow.locator('.cron-option-row__title').click();
+        await dayRow.locator('button').click();
+        for (const day of [31, 10, 9, 8, 1]) {
+          await page.locator('.cron-value-picker-popper:visible .cron-value-picker__chip').nth(day - 1).click();
+        }
+        await assertCronPickerLabels(page);
+        const expression: string = await page.locator('.hyn-cron-dialog__chip-code').innerText();
+        assert.equal(expression.split(/\s+/)[3], '8,9,10,31');
+        assert.match(expression.split(/\s+/)[6], /2099/);
+        assert.equal(await page.locator('.hyn-cron-dialog__summary.is-error').count(), 0, `Quartz year selections must remain valid and saveable: ${await page.locator('.hyn-cron-dialog__summary').innerText()}`);
+        await dayRow.locator('button').click();
+        await page.locator('.cron-value-picker-popper:visible').waitFor({ state: 'hidden' });
+        await page.locator('.hyn-dialog:visible .el-dialog__footer button').first().click();
+        await page.locator('.hyn-dialog:visible').waitFor({ state: 'hidden' });
+        assert.equal(await page.locator('.hyn-cron-expression input').inputValue(), expression);
+        console.log(`PASS Cron labels, selected state, date ordering and save: ${language} ${width}px`);
+      }
+    }
+    assert.deepEqual(errors, [], 'Cron picker must not emit browser errors or warnings');
   } finally {
     await page.close();
   }
@@ -359,6 +553,8 @@ assert.ok(address && typeof address !== 'string');
 const browser: Browser = await chromium.launch({ headless: true });
 try {
   await runSmoke(browser, `http://127.0.0.1:${address.port}`);
+  await runCronPickerSmoke(browser, `http://127.0.0.1:${address.port}`);
+  await runPresentationSmoke(browser, `http://127.0.0.1:${address.port}`);
   await runResourceFailureSmoke(browser, `http://127.0.0.1:${address.port}`);
   await runConsumerAdversarialSmoke(browser, `http://127.0.0.1:${address.port}`);
   assert.deepEqual(failures, [], 'Console warnings, runtime errors, and external requests must be absent');

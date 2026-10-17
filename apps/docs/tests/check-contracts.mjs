@@ -53,10 +53,13 @@ for (const [language, suffix] of [['zh_CN', 'zh-CN'], ['en_US', 'en-US']]) {
 const packageSources = readdirSync(packageRoot, { recursive: true })
   .filter(file => /\.(ts|vue|scss)$/.test(file) && !file.includes('locales'))
   .map(file => readFileSync(resolve(packageRoot, file), 'utf8'));
-const definedTokens = new Set(packageSources.flatMap(source => [...source.matchAll(/(--app-[\w-]+)\s*:/g)].map(match => match[1])));
+/** 宿主需要导出的变量同时包含 app 前缀和历史表格命名，不能因命名风格不同漏检。 */
+const definedTokens = new Set(packageSources.flatMap(source => [...source.matchAll(/(--[\w-]+)['"]?\s*:/g)].map(match => match[1])));
 for (const source of packageSources) {
   assert.equal(/from\s+['"]@\//.test(source), false, 'Package must not import the original business application alias');
-  for (const match of source.matchAll(/var\((--app-[\w-]+)/g)) {
+  for (const match of source.matchAll(/var\(\s*(--[\w-]+)/g)) {
+    // Element Plus 提供 el 变量；组件局部尺寸由 props/computed 提供，不属于宿主主题出口。
+    if (/^--(?:el-|hyn-|cron-)/.test(match[1])) { continue; }
     assert.ok(definedTokens.has(match[1]), `Package style token is missing: ${match[1]}`);
   }
 }

@@ -30,8 +30,8 @@ importers:
         specifier: ^3.13.12
         version: 3.13.31(vue@3.5.39(typescript@5.9.3))
       croner:
-        specifier: ^9.1.0
-        version: 9.1.0
+        specifier: ^10.0.1
+        version: 10.0.1
       cronstrue:
         specifier: ^2.59.0
         version: 2.61.0
@@ -88,8 +88,8 @@ importers:
         specifier: ^3.13.12
         version: 3.13.31(vue@3.5.39(typescript@5.9.3))
       croner:
-        specifier: ^9.1.0
-        version: 9.1.0
+        specifier: ^10.0.1
+        version: 10.0.1
       cronstrue:
         specifier: ^2.59.0
         version: 2.61.0
@@ -539,8 +539,8 @@ packages:
   confbox@0.2.4:
     resolution: {integrity: sha512-ysOGlgTFbN2/Y6Cg3Iye8YKulHw+R2fNXHrgSmXISQdMnomY6eNDprVdW9R5xBguEqI954+S6709UyiO7B+6OQ==}
 
-  croner@9.1.0:
-    resolution: {integrity: sha512-p9nwwR4qyT5W996vBZhdvBCnMhicY5ytZkR4D1Xj0wuTDEiMnjwR57Q3RXYY/s0EpX6Ay3vgIcfaR+ewGHsi+g==}
+  croner@10.0.1:
+    resolution: {integrity: sha512-ixNtAJndqh173VQ4KodSdJEI6nuioBWI0V1ITNKhZZsO0pEMoDxz539T4FTTbSZ/xIOSuDnzxLVRqBVSvPNE2g==}
     engines: {node: '>=18.0'}
 
   cronstrue@2.61.0:
@@ -1382,7 +1382,7 @@ snapshots:
 
   confbox@0.2.4: {}
 
-  croner@9.1.0: {}
+  croner@10.0.1: {}
 
   cronstrue@2.61.0: {}
 

@@ -44,6 +44,8 @@ export default {
   },
 
   layout: {
+    /** Accessible label for the document language preference. */
+    language: 'Language',
     skipToContent: 'Skip to content',
     sidebarAria: 'HYN component docs navigation',
     brandTitle: 'Component Atlas',

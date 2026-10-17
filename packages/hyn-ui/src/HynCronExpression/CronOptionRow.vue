@@ -7,8 +7,8 @@
     <div class="cron-option-row__radio">
       <el-radio :value="value" :disabled="disabled" :aria-label="title" />
     </div>
-    <div class="cron-option-row__copy">
-      <span class="cron-option-row__title">{{ title }}</span>
+    <div class="cron-option-row__title" :class="`is-overflow-${hynConfig.overflowMode}`">
+      <HynOverflowText :content="title" :mode="hynConfig.overflowMode" />
     </div>
     <div class="cron-option-row__params">
       <slot />
@@ -17,6 +17,8 @@
 </template>
 
 <script setup lang="ts">
+import HynOverflowText from '../internal/HynOverflowText.vue';
+import { useHynGlobalConfig } from '../config';
 import { ElRadio } from 'element-plus';
 /** Cron 可视化面板中单个规则模式行的参数。 */
 interface Props {
@@ -38,6 +40,8 @@ interface Emits {
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
+/** 内部规则标签与 HynForm 共享全局溢出协议，不能自行强制换行。 */
+const hynConfig = useHynGlobalConfig();
 
 /** 点击整行时只切换当前模式，参数控件本身仍保留独立交互语义。 */
 function selectRow(): void {
@@ -52,7 +56,7 @@ function selectRow(): void {
 .cron-option-row {
   position: relative;
   display: grid;
-  grid-template-columns: 24px minmax(104px, 128px) minmax(0, 1fr);
+  grid-template-columns: 24px var(--cron-option-label-width) minmax(0, 1fr);
   min-width: 0;
   min-height: 42px;
   align-items: center;
@@ -100,19 +104,18 @@ function selectRow(): void {
   display: none;
 }
 
-.cron-option-row__copy {
+.cron-option-row__title {
   display: flex;
   min-width: 0;
   align-items: center;
-}
-
-.cron-option-row__title {
-  min-width: 0;
   color: var(--el-text-color-primary);
   font-size: 13px;
   font-weight: 600;
   line-height: 19px;
-  overflow-wrap: break-word;
+}
+
+.cron-option-row__title:not(.is-overflow-wrap) {
+  white-space: nowrap;
 }
 
 .cron-option-row__params {

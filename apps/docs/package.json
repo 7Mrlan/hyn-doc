@@ -14,7 +14,7 @@
                          "@element-plus/icons-vue":  "^2.3.2",
                          "@highlightjs/vue-plugin":  "^2.1.0",
                          "@tanstack/vue-virtual":  "^3.13.12",
-                         "croner":  "^9.1.0",
+                         "croner":  "^10.0.1",
                          "cronstrue":  "^2.59.0",
                          "element-plus":  "^2.13.0",
                          "highlight.js":  "^11.11.1",

@@ -1,6 +1,7 @@
 <template>
   <button type="button" @click="dialogVisible = true">Open validation dialog</button>
   <output data-testid="submit-count">{{ submitCount }}</output>
+  <output data-testid="validation-count">{{ validationCount }}</output>
   <hyn-dialog v-model="dialogVisible" title="Validation check" :model="model" :fields="fields" :rules="rules" @submit="submit">
     <template #closeTimer><button type="button" @click="closeLater">Close after delay</button></template>
   </hyn-dialog>
@@ -41,6 +42,8 @@ const cronModel = ref(parseQuartzExpressionToModel('0 0 12 * * ?', 2026).model);
 
 const dialogVisible = ref<boolean>(false);
 const submitCount = ref<number>(0);
+/** 响应处理结束后递增，使取消用例可以等校验真正完成而不是等待固定毫秒数。 */
+const validationCount = ref<number>(0);
 const model = ref<CheckForm>({ name: 'checked', category: '' });
 const fields: HynDialogField<CheckForm>[] = [
   { key: 'name', prop: 'name', label: 'Name', type: 'input' },
@@ -48,13 +51,20 @@ const fields: HynDialogField<CheckForm>[] = [
   { key: 'timer', label: '', type: 'slot', slot: 'closeTimer' }
 ];
 const rules: FormRules<CheckForm> = {
-  name: [{ asyncValidator: async (): Promise<void> => { await new Promise<void>(done => window.setTimeout(done, 300)); } }]
+  name: [{ asyncValidator: validateName }]
 };
 
-/** 实际异步校验与提交都完成后才累计次数，快速双击必须只执行一次。 */
+/** 真实 HTTP 校验由测试服务器释放响应，保证取消与完成的先后顺序可验证。 */
+async function validateName(): Promise<void> {
+  const response: Response = await fetch('/__validation', { cache: 'no-store' });
+  if (!response.ok) { throw new Error(`Fixture validation request failed: /__validation status=${response.status}`); }
+  validationCount.value += 1;
+}
+
+/** 累计业务保存的开始次数，不能用尚未结束的保存延时掩盖取消后误触发提交。 */
 async function submit(): Promise<void> {
-  await new Promise<void>(done => window.setTimeout(done, 80));
   submitCount.value += 1;
+  await new Promise<void>(done => window.setTimeout(done, 80));
   dialogVisible.value = false;
 }
 

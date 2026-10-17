@@ -11,10 +11,19 @@ const consumerDist: string = resolve('apps/docs/node_modules/.cache/hyn-browser-
 const failures: string[] = [];
 /** 测试服务器真实返回 404，以复现旧页面加载已删除 chunk 的发布故障。 */
 let missingFilePicker: boolean = false;
+/** 测试明确控制校验响应完成顺序，不依赖不同操作系统上的点击耗时。 */
+let validationRequestReceiver: ((response: ServerResponse) => void) | undefined;
 const mime: Record<string, string> = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
 const server = createServer((request, response): void => {
   const requestUrl: URL = new URL(request.url ?? '/', 'http://localhost');
   const pathname: string = decodeURIComponent(requestUrl.pathname);
+  if (pathname === '/__validation') {
+    const receiver = validationRequestReceiver;
+    validationRequestReceiver = undefined;
+    if (!receiver) { response.writeHead(500).end('Unexpected validation request'); return; }
+    receiver(response);
+    return;
+  }
   if (pathname === '/__entities') {
     const name: string = requestUrl.searchParams.get('name') ?? '';
     sendEntityPage(name, response);
@@ -34,6 +43,19 @@ const server = createServer((request, response): void => {
     response.writeHead(404).end();
   }
 });
+
+/** 在发起确认前等待真实 HTTP 校验请求，响应由当前用例在预期交互完成后释放。 */
+function waitForValidationRequest(timeoutMs: number): Promise<ServerResponse> {
+  assert.equal(validationRequestReceiver, undefined, 'Only one validation request may be awaited at a time');
+  return new Promise<ServerResponse>((resolve, reject) => {
+    // 超时只报告请求缺失，不会提前释放校验或改变取消与完成的先后顺序。
+    const timeout = setTimeout(() => {
+      validationRequestReceiver = undefined;
+      reject(new Error('The dialog did not start its HTTP validation request'));
+    }, timeoutMs);
+    validationRequestReceiver = response => { clearTimeout(timeout); resolve(response); };
+  });
+}
 
 /** 用真实 HTTP 返回乱序查询结果，不替换组件内部状态或 adapter 方法。 */
 function sendEntityPage(name: string, response: ServerResponse): void {
@@ -320,15 +342,20 @@ async function runConsumerAdversarialSmoke(browser: Browser, origin: string): Pr
   try {
     await page.goto(`${origin}/__checks/tests/adversarial.html`, { waitUntil: 'networkidle' });
     await page.getByRole('button', { name: 'Open validation dialog', exact: true }).click();
+    const firstValidation = waitForValidationRequest(10000);
     await page.locator('.hyn-dialog:visible').getByRole('button', { name: '确定', exact: true }).dblclick();
+    (await firstValidation).writeHead(204).end();
     await page.locator('.hyn-dialog:visible').waitFor({ state: 'hidden' });
     assert.equal(await page.getByTestId('submit-count').innerText(), '1');
     await page.getByRole('button', { name: 'Open validation dialog', exact: true }).click();
+    const cancelledValidation = waitForValidationRequest(10000);
     await page.locator('.hyn-dialog:visible').getByRole('button', { name: '确定', exact: true }).click();
+    const cancelledResponse: ServerResponse = await cancelledValidation;
     await page.locator('.hyn-dialog:visible').getByRole('button', { name: '取消', exact: true }).click();
     await page.locator('.hyn-dialog:visible').waitFor({ state: 'hidden' });
-    // 等待真实异步校验和提交窗口结束，确认取消不会延迟触发保存。
-    await page.waitForTimeout(450);
+    // 取消完成后才让校验返回，确保断言覆盖的是仍在校验中的确认任务。
+    cancelledResponse.writeHead(204).end();
+    await page.waitForFunction(() => document.querySelector('[data-testid="validation-count"]')?.textContent === '2');
     assert.equal(await page.getByTestId('submit-count').innerText(), '1');
     await page.getByRole('button', { name: 'Open validation dialog', exact: true }).click();
     await page.getByRole('button', { name: 'Close after delay', exact: true }).click();
